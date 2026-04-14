@@ -1,9 +1,10 @@
-from .exceptions import BrainfuckException, BFSegmentationFault, BFSyntaxError
+from .exceptions import BrainfuckException, BFSegmentationFault, BFSyntaxError, BFInterrupt
 from .format_tools import COL_RESET, COL_ERR, COL_ERR_HIGHLIGHT
 
 ERROR_NAMES: dict[type[BrainfuckException], str] = {
     BFSegmentationFault: "segmentation fault",
-    BFSyntaxError: "syntax error"
+    BFSyntaxError: "syntax error",
+    BFInterrupt: "interrupted by user",
 }
 
 def get_line_and_col(code: str, pos: int) -> tuple[int, int]:

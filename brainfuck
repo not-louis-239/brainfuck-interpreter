@@ -7,7 +7,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent / "src"))
 
 from brainfuck.fundamentals.run_brainfuck import validate_brainfuck, run_brainfuck
-from brainfuck.fundamentals.exceptions import BrainfuckException
+from brainfuck.fundamentals.exceptions import BrainfuckException, BFInterrupt
 from brainfuck.fundamentals.bf_traceback import format_bf_traceback
 from brainfuck.fundamentals.show_ascii import show_ascii
 
@@ -86,6 +86,9 @@ def main():
     # Run Brainfuck and handle runtime exceptions
     try:
         run_brainfuck(code, wrap=args.wrap, memsize=args.memsize)
+    except BFInterrupt as e:
+        print(format_bf_traceback(e))
+        sys.exit(130)
     except BrainfuckException as e:
         print(format_bf_traceback(e))
         sys.exit(1)

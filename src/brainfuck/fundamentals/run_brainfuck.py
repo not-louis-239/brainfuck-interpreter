@@ -1,6 +1,6 @@
 import sys
 
-from .exceptions import BFSegmentationFault, BFSyntaxError
+from .exceptions import BFSegmentationFault, BFSyntaxError, BFInterrupt
 from .keywords import BrainfuckKeywords
 
 def validate_brainfuck(code: str) -> None:
@@ -68,7 +68,13 @@ def run_brainfuck(code: str, *, memsize: int, wrap: bool = False):
             print(chr(membuf[pointer_idx]), end='', flush=True)
 
         elif char == BrainfuckKeywords.STDIN:
-            ch = sys.stdin.read(1)
+            try:
+                ch = sys.stdin.read(1)
+            except KeyboardInterrupt:
+                raise BFInterrupt(
+                    "program interrupted by user",
+                    position=instruct_idx, code=code
+                )
             if ch:
                 membuf[pointer_idx] = ord(ch) % 256
             else:

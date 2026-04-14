@@ -13,3 +13,7 @@ class BFSegmentationFault(BrainfuckException):
     """Exception raised for Brainfuck segmentation fault.
     Triggers if you attempt to access out-of-bounds memory."""
     pass
+
+class BFInterrupt(BrainfuckException):
+    """Exception raised when the user interrupts the program with Ctrl-C."""
+    pass
