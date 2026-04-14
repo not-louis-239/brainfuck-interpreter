@@ -7,7 +7,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent / "src"))
 
 from brainfuck.fundamentals.run_brainfuck import validate_brainfuck, run_brainfuck
-from brainfuck.fundamentals.exceptions import BFSyntaxError, BFSegmentationFault
+from brainfuck.fundamentals.exceptions import BrainfuckException
+from brainfuck.fundamentals.bf_traceback import format_bf_traceback
 from brainfuck.fundamentals.show_ascii import show_ascii
 
 @dataclass
@@ -78,28 +79,16 @@ def main():
     except FileNotFoundError:
         print(f"brainfuck: no such file or directory: {args.path}")
         sys.exit(1)
-    except BFSyntaxError as e:
-        print(f"brainfuck: syntax error: {e}")
-        sys.exit(2)
+    except BrainfuckException as e:
+        print(format_bf_traceback(e))
+        sys.exit(1)
 
     # Run Brainfuck and handle runtime exceptions
     try:
         run_brainfuck(code, wrap=args.wrap, memsize=args.memsize)
-    except BFSegmentationFault as e:
-        print(f"brainfuck: segmentation fault: {e}")
+    except BrainfuckException as e:
+        print(format_bf_traceback(e))
         sys.exit(1)
-    except BFSyntaxError as e:
-        print(f"brainfuck: syntax error: {e}")
-        sys.exit(2)
-    except KeyboardInterrupt:
-        print("brainfuck: interrupted by user")
-        sys.exit(1)
-    except EOFError:
-        print("brainfuck: end of file error reading from stdin")
-        sys.exit(1)
-    except Exception as e:
-        print(f"brainfuck: unexpected error: {e}")
-        sys.exit(3)
 
 if __name__ == "__main__":
     main()

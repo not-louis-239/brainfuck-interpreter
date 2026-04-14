@@ -1,6 +1,9 @@
 class BrainfuckException(Exception):
-    """Base exception class for Brainfuck exceptions."""
-    pass
+    def __init__(self, message: str, position: int, code: str):
+        super().__init__(message)
+        self.message = message
+        self.position = position
+        self.code = code
 
 class BFSyntaxError(BrainfuckException):
     """Exception raised for Brainfuck syntax errors."""
