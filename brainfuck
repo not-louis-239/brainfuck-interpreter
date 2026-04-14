@@ -1,0 +1,102 @@
+#!/usr/bin/env python3
+
+import sys
+from dataclasses import dataclass
+
+from src.run_brainfuck import validate_brainfuck, run_brainfuck
+from src.exceptions import BFSyntaxError, BFSegmentationFault
+from src.show_ascii import show_ascii
+
+@dataclass
+class Args:
+    path: str
+    wrap: bool
+    memsize: int
+
+def parse_args() -> Args:
+    argv = sys.argv
+
+    if len(argv) < 2:
+        print("usage: brainfuck <file> [-w, --wrap] [-m, --memsize N]")
+        sys.exit(1)
+
+    if argv[1] in ("-h", "--help"):
+        print("usage: brainfuck <file> [-w, --wrap] [-m, --memsize N]")
+        print("ASCII Guide")
+        show_ascii()
+
+        sys.exit(0)
+
+    path = argv[1]
+    wrap = False
+    memsize = 30_000
+
+    i = 2
+    while i < len(argv):
+        arg = argv[i]
+
+        if arg in ("-w", "--wrap"):
+            wrap = True
+
+        elif arg in ("-m", "--memsize"):
+            i += 1
+            if i >= len(argv):
+                print("brainfuck: error: (-m, --memsize) requires a >0 integer value")
+                sys.exit(1)
+
+            try:
+                memsize = int(argv[i])
+                if memsize <= 0:
+                    print(f"brainfuck: invalid memsize value: '{argv[i]}' (must be int and >0)")
+                    sys.exit(1)
+            except ValueError:
+                print(f"brainfuck: invalid memsize value: '{argv[i]}' (must be int and >0)")
+                sys.exit(1)
+
+        else:
+            print(f"brainfuck: unknown arg: {arg}")
+            sys.exit(1)
+
+        i += 1
+
+    return Args(path=path, wrap=wrap, memsize=memsize)
+
+def main():
+    args = parse_args()
+
+    # Attempt to parse the file and handle compile-time exceptions
+    try:
+        with open(args.path, 'r', encoding="utf-8") as file:
+            code = file.read()
+        validate_brainfuck(code)
+    except IsADirectoryError:
+        print(f"brainfuck: is a directory: {args.path}")
+        sys.exit(1)
+    except FileNotFoundError:
+        print(f"brainfuck: no such file or directory: {args.path}")
+        sys.exit(1)
+    except BFSyntaxError as e:
+        print(f"brainfuck: syntax error: {e}")
+        sys.exit(2)
+
+    # Run Brainfuck and handle runtime exceptions
+    try:
+        run_brainfuck(code, wrap=args.wrap, memsize=args.memsize)
+    except BFSegmentationFault as e:
+        print(f"brainfuck: segmentation fault: {e}")
+        sys.exit(1)
+    except BFSyntaxError as e:
+        print(f"brainfuck: syntax error: {e}")
+        sys.exit(2)
+    except KeyboardInterrupt:
+        print("brainfuck: interrupted by user")
+        sys.exit(1)
+    except EOFError:
+        print("brainfuck: end of file error reading from stdin")
+        sys.exit(1)
+    except Exception as e:
+        print(f"brainfuck: unexpected error: {e}")
+        sys.exit(3)
+
+if __name__ == "__main__":
+    main()
