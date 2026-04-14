@@ -13,7 +13,7 @@ The name "Crimscript" is inspired by the Crimson Badlands in Stardew Valley Expa
 ## Crimscript Syntax
 
 ### Punctuation
-- `;`: Statement terminator. Not compulsory, unless to separate two instructions on the same line.
+- `;`: Statement terminator. Not compulsory, unless to separate multiple instructions on the same line.
 - `\`: Line continuation character. If a line ends with `\`, the next line is considered a continuation of the current line, allowing for multi-line statements.
 - Braces `{}`: Used to define blocks of code, such as the body of loops.
 - Indentation is **not** required, but improves readability. The compiler ignores all whitespace, including newlines and indentation.
@@ -21,16 +21,15 @@ The name "Crimscript" is inspired by the Crimson Badlands in Stardew Valley Expa
 ### Condensed Operations
 - `>`, `<`: Move the data pointer right or left.
 - `+`, `-`: Increment or decrement the value at the data pointer.
-- `>n`, `<n`: Move the data pointer right or left by n positions.
-- `+n`, `-n`: Increment or decrement the value at the data pointer by
+- `>n`, `<n`: Move the data pointer right or left by `n` positions.
+- `+n`, `-n`: Increment or decrement the value at the data pointer by `n`.
 
 ### Builtins
 - `print()`: Output the value at the data pointer as a character.
 - `print(s: str)`: For each character in the string `s`, clear the current cell, increment it up to the ASCII value of the character, print it, and then clear the cell again.
 - `input(p: str = '')`: Print the prompt string `p`, then input one character and store it at the data pointer. If `p` is not given, no prompt is printed.
 - `clear()`: Clear the value at the data pointer (set it to zero). Compiles to `[-]`.
-- `exit(n: int = 0)`: Exit the program with status code `n`. If `n` is not given, exit with status code 0. If `n` is >255 or <0, it will be reduced % 256. When compiled, the leftmost cell of the memory buffer is reserved for the exit code.
-- `set(n: int)`: Set the value at the data pointer to `n`. Compiles to `[-]` followed by `+` repeated `n` times.
+- `set(n: int)`: Set the value at the data pointer to `n`. Compiles to `[-]` followed by `+` repeated `n` times, or `-`, repeated `256 - n` times.
 
 ### Loops
 ```js
