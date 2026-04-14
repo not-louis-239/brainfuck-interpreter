@@ -5,7 +5,7 @@ This program includes
 - a Brainfuck interpreter, and
 - a compiler for a simple macro language that compiles to Brainfuck.
 
-## Crimscript - The Macro Language
+## Crimscript – The Macro Language
 The macro language, called Crimscript, is designed to be more human-readable and easier to write than Brainfuck. It includes commands for common operations, such as moving the data pointer, incrementing and decrementing values, and input/output operations. The compiler translates Crimscript code into Brainfuck code, which can then be executed by the interpreter.
 
 The name "Crimscript" is inspired by the Crimson Badlands in Stardew Valley Expanded, as the Crimson Badlands are chaotic, reflective in Brainfuck's chaotic nature.
@@ -29,14 +29,27 @@ The name "Crimscript" is inspired by the Crimson Badlands in Stardew Valley Expa
 - `print(s: str)`: For each character in the string `s`, clear the current cell, increment it up to the ASCII value of the character, print it, and then clear the cell again.
 - `input(p: str = '')`: Print the prompt string `p`, then input one character and store it at the data pointer. If `p` is not given, no prompt is printed.
 - `clear()`: Clear the value at the data pointer (set it to zero). Compiles to `[-]`.
-- `exit(n: int = 0)`: Exit the program with status code `n`. If `n` is not given, exit with status code 0. If `n` is >255 or <0, it will be reduced % 256.
+- `exit(n: int = 0)`: Exit the program with status code `n`. If `n` is not given, exit with status code 0. If `n` is >255 or <0, it will be reduced % 256. When compiled, the leftmost cell of the memory buffer is reserved for the exit code.
 - `set(n: int)`: Set the value at the data pointer to `n`. Compiles to `[-]` followed by `+` repeated `n` times.
 
 ### Loops
-```
+```js
 until N {
     // code to repeat until the value at the data pointer is equal to N
 }
+```
+
+`until` compiles to:
+```bf
+---  # N '-'s to subtract the offset for checking
+[
+    +++  # undo offset inside loop
+
+    # rest of loop code...
+
+    ---  # subtract offset to check
+]
++++  # N '+'s to undo the offset
 ```
 
 ### Comments
