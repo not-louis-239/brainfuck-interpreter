@@ -12,6 +12,12 @@ The name "Crimscript" is inspired by the Crimson Badlands in Stardew Valley Expa
 
 ## Crimscript Syntax
 
+### Punctuation
+- `;`: Statement terminator. Not compulsory, unless to separate two instructions on the same line.
+- `\`: Line continuation character. If a line ends with `\`, the next line is considered a continuation of the current line, allowing for multi-line statements.
+- Braces `{}`: Used to define blocks of code, such as the body of loops.
+- Indentation is **not** required, but improves readability. The compiler ignores all whitespace, including newlines and indentation.
+
 ### Condensed Operations
 - `>`, `<`: Move the data pointer right or left.
 - `+`, `-`: Increment or decrement the value at the data pointer.
