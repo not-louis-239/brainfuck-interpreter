@@ -289,6 +289,32 @@ class CrimscriptCompiler:
         """Return True when the parser has consumed all tokens."""
         return self.pos >= len(self.tokens)
 
+    def _optimise_brainfuck(self, code: str) -> str:
+        """Optimise the generated Brainfuck code by collapsing sequences of +/-, >/<, which cancel out."""
+        def simplify_operators(match: re.Match) -> str:
+            text = match.group(0)
+            net = (text.count('+') - text.count('-') + 128) % 256 - 128  # net effect of the sequence, wrapped to [-128...127]
+            if net > 0:
+                return '+' * net
+            elif net < 0:
+                return '-' * -net
+            else:
+                return ''
+
+        def simplify_pointers(match: re.Match) -> str:
+            text = match.group(0)
+            net = (text.count('>') - text.count('<'))  # no %256 here since pointer movement can be unbounded
+            if net > 0:
+                return '>' * net
+            elif net < 0:
+                return '<' * -net
+            else:
+                return ''
+
+        code = re.sub(r'[+-]+', simplify_operators, code)
+        code = re.sub(r'[<>]+', simplify_pointers, code)
+        return code
+
     def tokenise(self, code: list[str]) -> list[Token]:
         """
         Tokenises the input Crimscript code into a list of Tokens.
@@ -392,10 +418,9 @@ class CrimscriptCompiler:
 
         tokens = self.tokenise(code)
         ast = self.parse(tokens)
-        bf_code: list[str] = []
+        bf_code: list[str] = [
+            self._compile_statement(stmt) for stmt in ast
+        ]
 
-        for statement in ast:
-            bf_code.append(self._compile_statement(statement))
-
-        bf_code_str = ''.join(bf_code)
+        bf_code_str = self._optimise_brainfuck(''.join(bf_code))
         return "\n".join([bf_code_str[i:i + LINESIZE] for i in range(0, len(bf_code_str), LINESIZE)])
