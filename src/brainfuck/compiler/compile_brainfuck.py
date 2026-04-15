@@ -8,6 +8,8 @@ from .exceptions import (
 import re
 from .crim_tokens import Token, CrimTokenType
 
+LINESIZE = 80  # split the final BF code to this many chars per line for readability
+
 # AST node definitions
 @dataclass
 class Statement:
@@ -349,7 +351,7 @@ class CrimscriptCompiler:
 
         return statements
 
-    def compile_brainfuck(self, code: list[str]) -> str:
+    def compile_crimscript(self, code: list[str]) -> str:
         """
         Accepts a document of macrolang code and converts it to Brainfuck.
         The input is a list of strings, where each string is a line of Crimscript code.
@@ -363,4 +365,5 @@ class CrimscriptCompiler:
         for statement in ast:
             bf_code.append(self._compile_statement(statement))
 
-        return "".join(bf_code)
+        bf_code_str = ''.join(bf_code)
+        return "\n".join([bf_code_str[i:i + LINESIZE] for i in range(0, len(bf_code_str), LINESIZE)])

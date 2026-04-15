@@ -3,29 +3,77 @@
 import sys
 from dataclasses import dataclass
 from pathlib import Path
+from typing import NoReturn
 
 sys.path.insert(0, str(Path(__file__).parents[1] / "src"))
 
 from brainfuck.compiler.compile_brainfuck import CrimscriptCompiler
-from brainfuck.compiler.exceptions import CompilerSyntaxError, CompilerTypeError
+from brainfuck.compiler.exceptions import CompilerException
+from brainfuck.compiler.format_errors import format_err
 
 @dataclass
 class Args:
-    path: str
+    input_path: str
+    output_path: str | None = None
+    danger_allow_clobber: bool = False
+
+def fatal_err(message: str) -> NoReturn:
+    print(f"{Path(__file__).name}: {message}", file=sys.stderr)
+    sys.exit(1)
 
 def parse_args() -> Args:
-    if len(sys.argv) != 2:
-        print(f"Usage: {sys.argv[0]} <path_to_crimscript>")
-        sys.exit(1)
+    danger_allow_clobber = False
+
+    if len(sys.argv) == 1:
+        fatal_err("missing args. run with -h or --help for usage information")
     if sys.argv[1] in ("-h", "--help"):
         print(f"Usage: {sys.argv[0]} <path_to_crimscript>")
         sys.exit(0)
+    if ("--allow-clobber" in sys.argv):  # no shortcut as overwriting is dangerous
+        print("WARNING: --allow-clobber is enabled. This will overwrite the output file if it exists.")
+        danger_allow_clobber = True
 
-    args = Args(path=sys.argv[1])
-    return args
+    if len(sys.argv) == 2:
+        input_path = sys.argv[1]
+        if not Path(input_path).is_file():
+            fatal_err(f"'{input_path}' is not a file")
+    elif len(sys.argv) == 3:
+        input_path = sys.argv[1]
+        output_path = sys.argv[2]
+        if not Path(input_path).is_file():
+            fatal_err(f"'{input_path}' is not a file")
+        if Path(output_path).exists():
+            if danger_allow_clobber:
+                print(f"WARNING: Overwriting existing file '{output_path}'")
+            else:
+                fatal_err(f"output file '{output_path}' already exists. (run with --allow-clobber to overwrite, this is dangerous and irreversible)")
+        return Args(input_path=input_path, output_path=output_path, danger_allow_clobber=danger_allow_clobber)
+    return Args(input_path=sys.argv[1])
 
 def main():
+    # Compile some Crimscript code in a file and output it to another file
+    # NO CLOBBERING: Do NOT overwrite the output file if it exists.
+    # If no output file is given, print the output to stdout.
+
     args = parse_args()
+    compiler = CrimscriptCompiler()
+
+    try:
+        with open(args.input_path, "r") as file:
+            code = file.readlines()
+        bf_code = compiler.compile_crimscript(code)
+        if args.output_path:
+            with open(args.output_path, "w") as file:
+                file.write(bf_code)
+        else:
+            print(bf_code)
+    except IsADirectoryError:
+        fatal_err(f"'{args.input_path}' is a directory")
+    except FileNotFoundError:
+        fatal_err(f"no such file or directory: {args.input_path}")
+    except CompilerException as e:
+        print(format_err(e), file=sys.stderr)
+        sys.exit(1)
 
 if __name__ == "__main__":
     main()
