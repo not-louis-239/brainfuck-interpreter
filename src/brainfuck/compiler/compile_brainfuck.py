@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from typing import List, Optional
 
 from .exceptions import (
     CompilerSyntaxError,
@@ -45,7 +44,7 @@ class SetStmt(Statement):
 @dataclass
 class UntilStmt(Statement):
     target: int
-    body: List[Statement]
+    body: list[Statement]
 
 class CrimscriptCompiler:
     def __init__(self):
@@ -133,13 +132,13 @@ class CrimscriptCompiler:
         self._expect(CrimTokenType.BRACKET_L)
 
         if self._peek().typ != CrimTokenType.NUMBER:
-            compiler_err("set() requires an integer argument", CompilerSyntaxError)
+            compiler_err("set() requires an integer argument", CompilerTypeError)
 
         value = self._advance().val
         self._expect(CrimTokenType.BRACKET_R)
 
         if not isinstance(value, int):
-            compiler_err("set() argument must be an integer", CompilerSyntaxError)
+            compiler_err("set() argument must be an integer", CompilerTypeError)
 
         return SetStmt(value=value)
 
@@ -148,11 +147,11 @@ class CrimscriptCompiler:
         self._expect(CrimTokenType.UNTIL)
 
         if self._peek().typ != CrimTokenType.NUMBER:
-            compiler_err("until requires a numeric target", CompilerSyntaxError)
+            compiler_err("until requires a numeric target", CompilerTypeError)
 
         target = self._advance().val
         if not isinstance(target, int):
-            compiler_err("until target must be an integer", CompilerSyntaxError)
+            compiler_err("until target must be an integer", CompilerTypeError)
 
         self._expect(CrimTokenType.BRACE_L)
         body: list[Statement] = []
@@ -172,7 +171,7 @@ class CrimscriptCompiler:
         """Parse a numeric value increment or decrement operation."""
         token = self._advance()
         if not isinstance(token.val, int):
-            compiler_err("Value change token must include an integer count", CompilerSyntaxError)
+            compiler_err("Value change token must include an integer count", CompilerTypeError)
         amount = token.val if token.typ == CrimTokenType.VAL_INC else -token.val
         return ValueChange(amount=amount)
 
@@ -180,7 +179,7 @@ class CrimscriptCompiler:
         """Parse a numeric pointer movement instruction."""
         token = self._advance()
         if not isinstance(token.val, int):
-            compiler_err("Pointer change token must include an integer distance", CompilerSyntaxError)
+            compiler_err("Pointer change token must include an integer distance", CompilerTypeError)
         distance = token.val if token.typ == CrimTokenType.PTR_INC else -token.val
         return PointerChange(distance=distance)
 
