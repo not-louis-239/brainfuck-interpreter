@@ -44,6 +44,16 @@ class UntilStmt(Statement):
     target: int
     body: list[Statement]
 
+@dataclass
+class MoveStmt(Statement):
+    delta_ptr_min: int
+    delta_ptr_max: int
+
+@dataclass
+class CopyStmt(Statement):
+    delta_ptr_min: int
+    delta_ptr_max: int
+    delta_ptr_tmp: int
 
 class _ParseHelper:
     """Class to handle token parsing. Stores parse_* methods."""

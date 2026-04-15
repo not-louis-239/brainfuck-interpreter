@@ -1,6 +1,9 @@
 from enum import StrEnum
 
 class CrimTokenType(StrEnum):
+    # With the exception of literals, these MUST match the
+    # keywords in-code.
+
     # Operators
     VAL_INC = '+'
     VAL_DEC = '-'
@@ -13,11 +16,8 @@ class CrimTokenType(StrEnum):
     UNTIL = 'until'
     SET = 'set'
     CLEAR = 'clear'
-
-    # Literals
-    INTEGER = 'INTEGER'
-    STRING = 'STRING'
-    IDENTIFIER = 'IDENTIFIER'
+    MOVE = 'mv'   # move
+    COPY = 'cp'   # copy
 
     # Punctuation
     BRACE_L = '{'
@@ -30,6 +30,11 @@ class CrimTokenType(StrEnum):
     COMMENT_INLINE = '//'
     COMMENT_LONG_START = '/*'
     COMMENT_LONG_END = '*/'
+
+    # Literals
+    INTEGER = 'INTEGER'
+    STRING = 'STRING'
+    IDENTIFIER = 'IDENTIFIER'
 
 class Token:
     def __init__(self, typ: CrimTokenType, val: str | int | None) -> None:
