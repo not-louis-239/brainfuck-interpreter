@@ -87,91 +87,104 @@ def validate_brainfuck(code: str) -> None:
             position=i, code=code
         )
 
+
+_ist = 0  # used to allow transmitting info from the function
+          # globals are usually bad practice and someday
+          # I want to find a better solution but this will have
+          # to do for now
+
+          # this is used for error reporting in KeyboardInterrupt
+          # scenarios where somehow it doesn't get caught
+          # by run_brainfuck's try-except for some reason??
 def run_brainfuck(code: str, *, memsize: int, wrap: bool = False):
-    mem: list[int] = [0] * memsize
-    ptr = 0
-    ist = 0
-    prog_len = len(code)
+    try:
+        mem: list[int] = [0] * memsize
+        ptr = 0
+        ist = 0
+        prog_len = len(code)
 
-    while ist < prog_len:
-        char = code[ist]
+        while ist < prog_len:
+            global _ist
+            _ist = ist
 
-        if char == BrainfuckKeywords.VAL_INC:
-            mem[ptr] = (mem[ptr] + 1) % 256
+            char = code[ist]
 
-        elif char == BrainfuckKeywords.VAL_DEC:
-            mem[ptr] = (mem[ptr] - 1) % 256
+            if char == BrainfuckKeywords.VAL_INC:
+                mem[ptr] = (mem[ptr] + 1) % 256
 
-        elif char == BrainfuckKeywords.PTR_INC:
-            ptr += 1
-            if ptr >= memsize:
-                if wrap:
-                    ptr = 0
-                else:
-                    raise BFSegmentationFault(
-                        f"access violation at far-right of memory",
-                        position=ist, code=code
-                    )
+            elif char == BrainfuckKeywords.VAL_DEC:
+                mem[ptr] = (mem[ptr] - 1) % 256
 
-        elif char == BrainfuckKeywords.PTR_DEC:
-            ptr -= 1
-            if ptr < 0:
-                if wrap:
-                    ptr = memsize - 1
-                else:
-                    raise BFSegmentationFault(
-                        f"access violation at far-left of memory",
-                        position=ist, code=code
-                    )
+            elif char == BrainfuckKeywords.PTR_INC:
+                ptr += 1
+                if ptr >= memsize:
+                    if wrap:
+                        ptr = 0
+                    else:
+                        raise BFSegmentationFault(
+                            f"access violation at far-right of memory",
+                            position=ist, code=code
+                        )
 
-        elif char == BrainfuckKeywords.STDOUT:
-            print(chr(mem[ptr]), end='', flush=True)
+            elif char == BrainfuckKeywords.PTR_DEC:
+                ptr -= 1
+                if ptr < 0:
+                    if wrap:
+                        ptr = memsize - 1
+                    else:
+                        raise BFSegmentationFault(
+                            f"access violation at far-left of memory",
+                            position=ist, code=code
+                        )
 
-        elif char == BrainfuckKeywords.STDIN:
-            try:
+            elif char == BrainfuckKeywords.STDOUT:
+                print(chr(mem[ptr]), end='', flush=True)
+
+            elif char == BrainfuckKeywords.STDIN:
                 ch = sys.stdin.read(1)
-            except KeyboardInterrupt:
-                raise BFInterrupt(
-                    "program interrupted by user",
-                    position=ist, code=code
-                )
-            if ch:
-                mem[ptr] = ord(ch) % 256
-            else:
-                mem[ptr] = 0
 
-        elif char == BrainfuckKeywords.LOOP_START:
-            # If the cell value is zero, jump forward to matching loop ender
-            if mem[ptr] == 0:
-                # jump forward to matching ]
-                depth = 1
-                while depth > 0:
-                    ist += 1
-                    if ist >= prog_len:
-                        raise BFSyntaxError(
-                            f"unmatched '{BrainfuckKeywords.LOOP_START}'",
-                            position=ist, code=code
-                        )
-                    if code[ist] == BrainfuckKeywords.LOOP_START:
-                        depth += 1
-                    elif code[ist] == BrainfuckKeywords.LOOP_END:
-                        depth -= 1
+                if ch:
+                    mem[ptr] = ord(ch) % 256
+                else:
+                    mem[ptr] = 0
 
-        elif char == BrainfuckKeywords.LOOP_END:
-            # If cell value is non-zero, jump back to matching loop start
-            if mem[ptr] != 0:
-                depth = 1
-                while depth > 0:
-                    ist -= 1
-                    if ist < 0:
-                        raise BFSyntaxError(
-                            f"unmatched '{BrainfuckKeywords.LOOP_END}'",
-                            position=ist, code=code
-                        )
-                    if code[ist] == BrainfuckKeywords.LOOP_END:
-                        depth += 1
-                    elif code[ist] == BrainfuckKeywords.LOOP_START:
-                        depth -= 1
+            elif char == BrainfuckKeywords.LOOP_START:
+                # If the cell value is zero, jump forward to matching loop ender
+                if mem[ptr] == 0:
+                    # jump forward to matching ]
+                    depth = 1
+                    while depth > 0:
+                        ist += 1
+                        if ist >= prog_len:
+                            raise BFSyntaxError(
+                                f"unmatched '{BrainfuckKeywords.LOOP_START}'",
+                                position=ist, code=code
+                            )
+                        if code[ist] == BrainfuckKeywords.LOOP_START:
+                            depth += 1
+                        elif code[ist] == BrainfuckKeywords.LOOP_END:
+                            depth -= 1
 
-        # Move forward to next instruction
-        ist += 1
+            elif char == BrainfuckKeywords.LOOP_END:
+                # If cell value is non-zero, jump back to matching loop start
+                if mem[ptr] != 0:
+                    depth = 1
+                    while depth > 0:
+                        ist -= 1
+                        if ist < 0:
+                            raise BFSyntaxError(
+                                f"unmatched '{BrainfuckKeywords.LOOP_END}'",
+                                position=ist, code=code
+                            )
+                        if code[ist] == BrainfuckKeywords.LOOP_END:
+                            depth += 1
+                        elif code[ist] == BrainfuckKeywords.LOOP_START:
+                            depth -= 1
+
+            # Move forward to next instruction
+            ist += 1
+    except KeyboardInterrupt:
+        raise BFInterrupt(
+            "program interrupted by user",
+            position=ist, code=code
+        )

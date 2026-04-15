@@ -7,6 +7,7 @@ from typing import NoReturn
 
 sys.path.insert(0, str(Path(__file__).parents[1] / "src"))
 
+import brainfuck.fundamentals.run_brainfuck as _runbf
 from brainfuck.fundamentals.run_brainfuck import validate_brainfuck, run_brainfuck
 from brainfuck.fundamentals.exceptions import BrainfuckException, BFInterrupt
 from brainfuck.fundamentals.format_traceback import format_bf_traceback
@@ -88,6 +89,10 @@ def main():
         run_brainfuck(code, wrap=args.wrap, memsize=args.memsize)
     except BFInterrupt as e:
         print(format_bf_traceback(e), file=sys.stderr)
+        sys.exit(130)
+    except KeyboardInterrupt:
+        exc = BFInterrupt(message="program interrupted by user", position=_runbf._ist, code=code)
+        print(format_bf_traceback(exc), file=sys.stderr)
         sys.exit(130)
     except BrainfuckException as e:
         print(format_bf_traceback(e), file=sys.stderr)
