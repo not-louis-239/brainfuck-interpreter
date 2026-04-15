@@ -44,10 +44,26 @@ class UntilStmt(Statement):
     target: int
     body: list[Statement]
 
+
+class _ParseHelper:
+    """Class to handle token parsing. Stores parse_* methods."""
+    def __init__(self):
+        pass
+
+    # TODO: move relevant methods here
+
+class _CompileHelper:
+    """Class to store token conversions to Brainfuck commands. Stores compile_* methods."""
+    def __init__(self):
+        pass
+
+    # TODO: move relevant methods here
+
 class CrimscriptCompiler:
     def __init__(self):
         # Initialize any necessary data structures or state here
-        pass
+        self.parser = _ParseHelper()
+        self.compiler = _CompileHelper()
 
     def _preprocess_code(self, code: list[str]) -> list[str]:
         """

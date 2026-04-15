@@ -30,6 +30,10 @@ class CompilerTypeError(CompilerException):
     """Raised when there is a type error in the macrolang code."""
     pass
 
+class CompilerValueError(CompilerException):
+    """Raised when an invalid value is detected by the compiler.
+    e.g. `until -1`, as Brainfuck values can only span 0..255."""
+
 class CompilerMemoryError(CompilerException):
     """Raised when the compiler detects a guaranteed
     out-of-bounds memory access, which would cause a segmentation fault."""
