@@ -239,6 +239,11 @@ class CrimscriptCompiler:
         for char in stmt.text:
             new_val = ord(char)
             diff = new_val - last_val
+
+            # We can abuse how Brainfuck wraps values
+            # at >255 or <0 to make our print even more efficient
+            diff = (diff + 128) % 256 - 128  # this caps diff to [-128...127]
+
             result.append('+' * diff if diff > 0 else '-' * -diff)
             result.append('.')
             last_val = new_val
