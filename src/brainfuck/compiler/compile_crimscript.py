@@ -107,6 +107,7 @@ class CrimscriptCompiler:
 
     def _parse_print(self) -> PrintStmt:
         """Parse a print() statement, optionally with a string argument."""
+
         self._expect(CrimTokenType.PRINT)
         self._expect(CrimTokenType.BRACKET_L)
 
@@ -222,20 +223,32 @@ class CrimscriptCompiler:
 
     def _compile_print(self, stmt: PrintStmt) -> str:
         """Compile a print statement to Brainfuck, either '.' or string output."""
+
+        # Use a greedy approach so that instead of clearing then plussing
+        # we remember the value from the last character and calculate how
+        # many increments/decrements we need to get to the next character.
+
         if stmt.text is None:
             return '.'
 
-        result = []
+        result: list[str] = []
+        last_val: int = 0
+
+        result.append('[-]')  # initial clear to ensure there is no residue
+
         for char in stmt.text:
-            result.append('[-]')
-            result.append('+' * ord(char))
+            new_val = ord(char)
+            diff = new_val - last_val
+            result.append('+' * diff if diff > 0 else '-' * -diff)
             result.append('.')
-        result.append('[-]')
+            last_val = new_val
+
+        result.append('[-]')  # final clear to leave cell at 0 after printing
         return ''.join(result)
 
     def _compile_input(self, stmt: InputStmt) -> str:
         """Compile an input statement to Brainfuck, optionally emitting a prompt first."""
-        code = []
+        code: list[str] = []
         if stmt.prompt is not None:
             code.append(self._compile_print(PrintStmt(text=stmt.prompt)))
         code.append(',')

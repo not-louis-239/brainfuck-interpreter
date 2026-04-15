@@ -35,7 +35,7 @@ def format_bf_traceback(e: BrainfuckException) -> str:
     return (
         f"brainfuck: {COL_ERR_HIGHLIGHT}{ERROR_NAMES.get(type(e), 'error')}{COL_RESET}: {COL_ERR}{e.message}{COL_RESET}\n"
         f"  at line {line}, column {col}\n"
-        f"  (at instruction {e.position})\n\n"
+        f"  (at instruction {e.position:,})\n\n"
 
         f"{src_line_before}{src_line_highlight}{src_line_after}\n"
         f"{COL_ERR_HIGHLIGHT}{pointer}{COL_RESET}"
