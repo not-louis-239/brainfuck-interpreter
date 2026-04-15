@@ -2,6 +2,7 @@
 
 print("I'm thinking of a number from 1 to 9.\n")
 input("Enter your guess: ")
+// Pointer is now at INPUT (0)
 
 // Set success flag initial value (1 right of stdin)
 >+<; -51
@@ -10,16 +11,16 @@ until 0 {
     // If we're here, the number was not '3' (ASCII 51)
 
     // Set failure flag 2 right of stdin
-    >2; +; <2
+    >2; +;
 
     // Kill the success flag
-    >1; clear(); <1
+    <1; clear()
 
     // Now destroy the input
-    clear()
+    <1; clear()
 }
 
-// Success code
+// Success branch
 >1
 until 0 {
     // If we're here, the number was right
@@ -27,16 +28,19 @@ until 0 {
     <; print("Correct!")
 
     // Now destroy the success flag to exit the loop
-    >; clear(); <
+    >; clear()
 }
+<1
 
+// Failure branch
 >2
 until 0 {
     // If we're here, the number was wrong.
     <2; print("You failed!")
 
-    >2; clear(); <2
+    >2; clear()
 }
+<2
 
 
 // end with a newline
