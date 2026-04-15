@@ -325,6 +325,9 @@ class CrimscriptCompiler:
         # First, handle line continuations and join multi-line statements
         processed_code = self._preprocess_code(code)
 
+        # Join all lines into a single string for tokenization
+        full_code = '\n'.join(processed_code)
+
         # Define regex patterns for different token types
         # Order matters: longer/more specific patterns first
         patterns = [
@@ -368,26 +371,32 @@ class CrimscriptCompiler:
             (r'\s+', None),
         ]
 
-        # Process each line
-        for line in processed_code:
-            pos = 0
-            while pos < len(line):
-                matched = False
+        # Process the full code as one string
+        pos = 0
+        while pos < len(full_code):
+            matched = False
 
-                for pattern, token_func in patterns:
+            for pattern, token_func in patterns:
+                if pattern == r'/\*.*?\*/':  # Multi-line comment needs DOTALL flag
+                    regex = re.compile(pattern, re.DOTALL)
+                else:
                     regex = re.compile(pattern)
-                    match = regex.match(line, pos)
+                match = regex.match(full_code, pos)
 
-                    if match:
-                        if token_func is not None:
-                            tokens.append(token_func(match))
-                        pos = match.end()
-                        matched = True
-                        break
+                if match:
+                    if token_func is not None:
+                        tokens.append(token_func(match))
+                    pos = match.end()
+                    matched = True
+                    break
 
-                if not matched:
-                    # No pattern matched - syntax error
-                    raise CompilerSyntaxError(f"Unexpected character '{line[pos]}' at position {pos}", self.pos, self.code)
+            if not matched:
+                # No pattern matched - syntax error
+                # Calculate line and column for better error reporting
+                lines = full_code[:pos].split('\n')
+                line_num = len(lines)
+                col_num = len(lines[-1]) + 1
+                raise CompilerSyntaxError(f"Unexpected character '{full_code[pos]}' at line {line_num}, column {col_num}", pos, full_code)
 
         return tokens
 
