@@ -4,7 +4,7 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent / "src"))
+sys.path.insert(0, str(Path(__file__).parents[1] / "src"))
 
 from brainfuck.fundamentals.run_brainfuck import validate_brainfuck, run_brainfuck
 from brainfuck.fundamentals.exceptions import BrainfuckException, BFInterrupt

@@ -15,7 +15,7 @@ class CrimTokenType(StrEnum):
     CLEAR = 'clear'
 
     # Literals
-    NUMBER = 'NUMBER'
+    INTEGER = 'INTEGER'
     STRING = 'STRING'
     IDENTIFIER = 'IDENTIFIER'
 

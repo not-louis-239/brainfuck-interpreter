@@ -1,13 +1,21 @@
-import warnings as _w
-from typing import NoReturn
+# not using warnings.warn() due to need for custom formatting and the fact
+# that these warnings are not meant to be ignored by default
 
 class CompilerException(Exception):
     """Base class for compiler exceptions."""
-    pass
+    def __init__(self, msg: str, pos: int, code: str):
+        super().__init__(msg)
+        self.msg = msg
+        self.pos = pos
+        self.code = code
 
 class CompilerWarning(Warning):
     """Base class for compiler warnings."""
-    pass
+    def __init__(self, msg: str, pos: int, code: str):
+        super().__init__(msg)
+        self.msg = msg
+        self.pos = pos
+        self.code = code
 
 class CompilerSyntaxError(CompilerException):
     """Raised when there is an error in the syntax of the macrolang code."""
@@ -26,9 +34,3 @@ class CompilerMemoryWarning(CompilerWarning):
     """Raised when the compiler detects a potential out-of-bounds memory access,
     but cannot guarantee it will take effect and cause a segmentation fault."""
     pass
-
-def compiler_err(msg: str, typ: type[CompilerException]) -> NoReturn:
-    raise typ(msg)
-
-def compiler_warn(msg: str, typ: type[CompilerWarning]) -> None:
-    _w.warn(msg, typ)

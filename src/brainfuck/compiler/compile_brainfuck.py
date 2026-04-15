@@ -2,11 +2,7 @@ from dataclasses import dataclass
 
 from .exceptions import (
     CompilerSyntaxError,
-    CompilerMemoryError,
-    CompilerWarning,
-    CompilerTypeError,
-    compiler_err,
-    compiler_warn
+    CompilerTypeError
 )
 
 import re
@@ -54,6 +50,7 @@ class CrimscriptCompiler:
     def _preprocess_code(self, code: list[str]) -> list[str]:
         """
         Preprocess the code to handle line continuations and remove comments.
+        Returns a list of processed lines ready for tokenization.
         """
         processed = []
         i = 0
@@ -68,6 +65,7 @@ class CrimscriptCompiler:
             processed.append(line)
             i += 1
 
+        self.code = "\n".join(processed)  # Store the full code for error reporting
         return processed
 
     def _parse_statement(self) -> Statement:
@@ -89,7 +87,7 @@ class CrimscriptCompiler:
         if token.typ in (CrimTokenType.PTR_INC, CrimTokenType.PTR_DEC):
             return self._parse_pointer_change()
 
-        compiler_err(f"Unexpected token {token.typ} in statement position", CompilerSyntaxError)
+        raise CompilerSyntaxError(f"Unexpected token: {token.typ}", self.pos, self.code)
 
     def _parse_print(self) -> PrintStmt:
         """Parse a print() statement, optionally with a string argument."""
@@ -131,14 +129,14 @@ class CrimscriptCompiler:
         self._expect(CrimTokenType.SET)
         self._expect(CrimTokenType.BRACKET_L)
 
-        if self._peek().typ != CrimTokenType.NUMBER:
-            compiler_err("set() requires an integer argument", CompilerTypeError)
+        if self._peek().typ != CrimTokenType.INTEGER:
+            raise CompilerTypeError("set() requires an integer argument", self.pos, self.code)
 
         value = self._advance().val
         self._expect(CrimTokenType.BRACKET_R)
 
         if not isinstance(value, int):
-            compiler_err("set() argument must be an integer", CompilerTypeError)
+            raise CompilerTypeError("set() argument must be an integer", self.pos, self.code)
 
         return SetStmt(value=value)
 
@@ -146,12 +144,12 @@ class CrimscriptCompiler:
         """Parse an until N { ... } loop and its nested statement body."""
         self._expect(CrimTokenType.UNTIL)
 
-        if self._peek().typ != CrimTokenType.NUMBER:
-            compiler_err("until requires a numeric target", CompilerTypeError)
+        if self._peek().typ != CrimTokenType.INTEGER:
+            raise CompilerTypeError("until requires an integer target", self.pos, self.code)
 
         target = self._advance().val
         if not isinstance(target, int):
-            compiler_err("until target must be an integer", CompilerTypeError)
+            raise CompilerTypeError("until target must be an integer", self.pos, self.code)
 
         self._expect(CrimTokenType.BRACE_L)
         body: list[Statement] = []
@@ -171,7 +169,8 @@ class CrimscriptCompiler:
         """Parse a numeric value increment or decrement operation."""
         token = self._advance()
         if not isinstance(token.val, int):
-            compiler_err("Value change token must include an integer count", CompilerTypeError)
+            raise CompilerTypeError("Value change token must include an integer count", self.pos, self.code)
+
         amount = token.val if token.typ == CrimTokenType.VAL_INC else -token.val
         return ValueChange(amount=amount)
 
@@ -179,7 +178,8 @@ class CrimscriptCompiler:
         """Parse a numeric pointer movement instruction."""
         token = self._advance()
         if not isinstance(token.val, int):
-            compiler_err("Pointer change token must include an integer distance", CompilerTypeError)
+            raise CompilerTypeError("Pointer change token must include an integer distance", self.pos, self.code)
+
         distance = token.val if token.typ == CrimTokenType.PTR_INC else -token.val
         return PointerChange(distance=distance)
 
@@ -202,7 +202,7 @@ class CrimscriptCompiler:
         if isinstance(stmt, UntilStmt):
             return self._compile_until(stmt)
 
-        compiler_err(f"Unknown statement type: {type(stmt).__name__}", CompilerSyntaxError)
+        raise CompilerSyntaxError(f"Unknown statement type: {type(stmt).__name__}", self.pos, self.code)
 
     def _compile_print(self, stmt: PrintStmt) -> str:
         """Compile a print statement to Brainfuck, either '.' or string output."""
@@ -235,7 +235,7 @@ class CrimscriptCompiler:
     def _peek(self) -> Token:
         """Return the current token without consuming it."""
         if self.pos >= len(self.tokens):
-            compiler_err("Unexpected end of input", CompilerSyntaxError)
+            raise CompilerSyntaxError("Unexpected end of input", self.pos, self.code)
         return self.tokens[self.pos]
 
     def _advance(self) -> Token:
@@ -248,7 +248,7 @@ class CrimscriptCompiler:
         """Consume a token and verify it matches the expected type."""
         token = self._peek()
         if token.typ != expected_type:
-            compiler_err(f"Expected {expected_type} but got {token.typ}", CompilerSyntaxError)
+            raise CompilerSyntaxError(f"Expected {expected_type} but got {token.typ}", self.pos, self.code)
         return self._advance()
 
     def _eof(self) -> bool:
@@ -282,7 +282,7 @@ class CrimscriptCompiler:
             (r'<(\d+)', lambda m: Token(CrimTokenType.PTR_DEC, int(m.group(1)))),
 
             # Numbers (must come after condensed operations)
-            (r'\d+', lambda m: Token(CrimTokenType.NUMBER, int(m.group(0)))),
+            (r'\d+', lambda m: Token(CrimTokenType.INTEGER, int(m.group(0)))),
 
             # Keywords (must come before identifiers)
             (r'\bprint\b', lambda m: Token(CrimTokenType.PRINT, m.group(0))),
@@ -327,7 +327,7 @@ class CrimscriptCompiler:
 
                 if not matched:
                     # No pattern matched - syntax error
-                    compiler_err(f"Unexpected character '{line[pos]}' at position {pos}", CompilerSyntaxError)
+                    raise CompilerSyntaxError(f"Unexpected character '{line[pos]}' at position {pos}", self.pos, self.code)
 
         return tokens
 
