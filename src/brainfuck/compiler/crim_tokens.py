@@ -32,7 +32,7 @@ class CrimTokenType(StrEnum):
     COMMENT_LONG_END = '*/'
 
 class Token:
-    def __init__(self, typ: CrimTokenType, val: str | int) -> None:
+    def __init__(self, typ: CrimTokenType, val: str | int | None) -> None:
         self.typ = typ
         self.val = val
 

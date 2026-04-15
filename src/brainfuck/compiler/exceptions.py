@@ -1,4 +1,5 @@
 import warnings as _w
+from typing import NoReturn
 
 class CompilerException(Exception):
     """Base class for compiler exceptions."""
@@ -26,8 +27,8 @@ class CompilerMemoryWarning(CompilerWarning):
     but cannot guarantee it will take effect and cause a segmentation fault."""
     pass
 
-def compiler_err(msg: str, typ: type[CompilerException]):
+def compiler_err(msg: str, typ: type[CompilerException]) -> NoReturn:
     raise typ(msg)
 
-def compiler_warn(msg: str, typ: type[CompilerWarning]):
+def compiler_warn(msg: str, typ: type[CompilerWarning]) -> None:
     _w.warn(msg, typ)
