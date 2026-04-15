@@ -1,16 +1,12 @@
 from .exceptions import BrainfuckException, BFSegmentationFault, BFSyntaxError, BFInterrupt
-from .format_tools import COL_RESET, COL_ERR, COL_ERR_HIGHLIGHT
+from ..utils.format_tools import COL_RESET, COL_ERR, COL_ERR_HIGHLIGHT
+from ..utils.line_and_col import get_line_and_col
 
 ERROR_NAMES: dict[type[BrainfuckException], str] = {
     BFSegmentationFault: "segmentation fault",
     BFSyntaxError: "syntax error",
     BFInterrupt: "interrupted by user",
 }
-
-def get_line_and_col(code: str, pos: int) -> tuple[int, int]:
-    line = code.count('\n', 0, pos) + 1
-    col = pos - code.rfind('\n', 0, pos)
-    return line, col
 
 def format_bf_traceback(e: BrainfuckException) -> str:
     line, col = get_line_and_col(e.code, e.position)

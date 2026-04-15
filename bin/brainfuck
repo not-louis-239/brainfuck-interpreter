@@ -3,12 +3,13 @@
 import sys
 from dataclasses import dataclass
 from pathlib import Path
+from typing import NoReturn
 
 sys.path.insert(0, str(Path(__file__).parents[1] / "src"))
 
 from brainfuck.fundamentals.run_brainfuck import validate_brainfuck, run_brainfuck
 from brainfuck.fundamentals.exceptions import BrainfuckException, BFInterrupt
-from brainfuck.fundamentals.bf_traceback import format_bf_traceback
+from brainfuck.fundamentals.format_traceback import format_bf_traceback
 from brainfuck.fundamentals.show_ascii import show_ascii
 
 @dataclass
@@ -17,15 +18,20 @@ class Args:
     wrap: bool
     memsize: int
 
+def fatal_err(message: str) -> NoReturn:
+    print(f"{Path(__file__).name}: {message}", file=sys.stderr)
+    sys.exit(1)
+
 def parse_args() -> Args:
     argv = sys.argv
 
     if len(argv) < 2:
-        print("usage: brainfuck <file> [-w, --wrap] [-m, --memsize N]")
+        fatal_err("missing args. run with -h or --help for usage information")
         sys.exit(1)
 
     if argv[1] in ("-h", "--help"):
-        print("usage: brainfuck <file> [-w, --wrap] [-m, --memsize N]")
+        # Do NOT print to stderr here since this is not an error case
+        print(f"usage: {Path(__file__).name} <file> [-w, --wrap] [-m, --memsize N]")
         print("ASCII Guide")
         show_ascii()
 
@@ -45,21 +51,17 @@ def parse_args() -> Args:
         elif arg in ("-m", "--memsize"):
             i += 1
             if i >= len(argv):
-                print("brainfuck: error: (-m, --memsize) requires a >0 integer value")
-                sys.exit(1)
+                fatal_err("brainfuck: error: (-m, --memsize) requires a >0 integer value")
 
             try:
                 memsize = int(argv[i])
                 if memsize <= 0:
-                    print(f"brainfuck: invalid memsize value: '{argv[i]}' (must be int and >0)")
-                    sys.exit(1)
+                    fatal_err(f"brainfuck: invalid memsize value: '{argv[i]}' (must be int and >0)")
             except ValueError:
-                print(f"brainfuck: invalid memsize value: '{argv[i]}' (must be int and >0)")
-                sys.exit(1)
+                fatal_err(f"brainfuck: invalid memsize value: '{argv[i]}' (must be int and >0)")
 
         else:
-            print(f"brainfuck: unknown arg: {arg}")
-            sys.exit(1)
+            fatal_err(f"brainfuck: unknown arg: {arg}")
 
         i += 1
 
@@ -74,23 +76,21 @@ def main():
             code = file.read()
         validate_brainfuck(code)
     except IsADirectoryError:
-        print(f"brainfuck: is a directory: {args.path}")
-        sys.exit(1)
+        fatal_err(f"'{args.path}' is a directory")
     except FileNotFoundError:
-        print(f"brainfuck: no such file or directory: {args.path}")
-        sys.exit(1)
+        fatal_err(f"no such file or directory: {args.path}")
     except BrainfuckException as e:
-        print(format_bf_traceback(e))
+        print(format_bf_traceback(e), file=sys.stderr)
         sys.exit(1)
 
     # Run Brainfuck and handle runtime exceptions
     try:
         run_brainfuck(code, wrap=args.wrap, memsize=args.memsize)
     except BFInterrupt as e:
-        print(format_bf_traceback(e))
+        print(format_bf_traceback(e), file=sys.stderr)
         sys.exit(130)
     except BrainfuckException as e:
-        print(format_bf_traceback(e))
+        print(format_bf_traceback(e), file=sys.stderr)
         sys.exit(1)
 
 if __name__ == "__main__":
