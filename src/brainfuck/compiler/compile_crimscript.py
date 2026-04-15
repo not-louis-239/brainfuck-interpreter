@@ -364,6 +364,12 @@ class CrimscriptCompiler:
         body = ''.join(self._compile_statement(child) for child in stmt.body)
         return f"{offset}[{restore}{body}{offset}]{restore}"
 
+    def _compile_move(self, stmt: MoveStmt) -> str:
+        ...
+
+    def _compile_copy(self, stmt: CopyStmt) -> str:
+        ...
+
     def _peek(self) -> Token:
         """Return the current token without consuming it."""
         if self.pos >= len(self.tokens):
