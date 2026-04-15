@@ -26,7 +26,7 @@ The name "Crimscript" is inspired by the Crimson Badlands in Stardew Valley Expa
 
 ### Builtins
 - `print()`: Output the value at the data pointer as a character.
-- `print(s: str)`: For each character in the string `s`, clear the current cell, increment it up to the ASCII value of the character, print it, and then clear the cell again.
+- `print(s: str)`: Clear the cell, then for each character in the string `s`, adjust it to the ASCII value of the character, print it, and then clear the cell again.
 - `input(p: str = '')`: Print the prompt string `p`, then input one character and store it at the data pointer. If `p` is not given, no prompt is printed.
 - `clear()`: Clear the value at the data pointer (set it to zero). Compiles to `[-]`.
 - `set(n: int)`: Set the value at the data pointer to `n`. Compiles to `[-]` followed by `+` repeated `n` times, or `-`, repeated `256 - n` times.
