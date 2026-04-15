@@ -5,6 +5,7 @@ from .exceptions import (
     CompilerSyntaxError,
     CompilerMemoryError,
     CompilerWarning,
+    CompilerTypeError,
     compiler_err,
     compiler_warn
 )
@@ -71,6 +72,7 @@ class CrimscriptCompiler:
         return processed
 
     def _parse_statement(self) -> Statement:
+        """Parse the next top-level Crimscript statement from the token stream."""
         token = self._peek()
 
         if token.typ == CrimTokenType.PRINT:
@@ -91,6 +93,7 @@ class CrimscriptCompiler:
         compiler_err(f"Unexpected token {token.typ} in statement position", CompilerSyntaxError)
 
     def _parse_print(self) -> PrintStmt:
+        """Parse a print() statement, optionally with a string argument."""
         self._expect(CrimTokenType.PRINT)
         self._expect(CrimTokenType.BRACKET_L)
 
@@ -104,6 +107,7 @@ class CrimscriptCompiler:
         return PrintStmt(text=text)
 
     def _parse_input(self) -> InputStmt:
+        """Parse an input() statement, optionally with a prompt string."""
         self._expect(CrimTokenType.INPUT)
         self._expect(CrimTokenType.BRACKET_L)
 
@@ -117,12 +121,14 @@ class CrimscriptCompiler:
         return InputStmt(prompt=prompt)
 
     def _parse_clear(self) -> ClearStmt:
+        """Parse a clear() statement, which clears the current data cell."""
         self._expect(CrimTokenType.CLEAR)
         self._expect(CrimTokenType.BRACKET_L)
         self._expect(CrimTokenType.BRACKET_R)
         return ClearStmt()
 
     def _parse_set(self) -> SetStmt:
+        """Parse a set(n) statement and validate that its argument is an integer."""
         self._expect(CrimTokenType.SET)
         self._expect(CrimTokenType.BRACKET_L)
 
@@ -138,6 +144,7 @@ class CrimscriptCompiler:
         return SetStmt(value=value)
 
     def _parse_until(self) -> UntilStmt:
+        """Parse an until N { ... } loop and its nested statement body."""
         self._expect(CrimTokenType.UNTIL)
 
         if self._peek().typ != CrimTokenType.NUMBER:
@@ -162,6 +169,7 @@ class CrimscriptCompiler:
         return UntilStmt(target=target, body=body)
 
     def _parse_value_change(self) -> ValueChange:
+        """Parse a numeric value increment or decrement operation."""
         token = self._advance()
         if not isinstance(token.val, int):
             compiler_err("Value change token must include an integer count", CompilerSyntaxError)
@@ -169,6 +177,7 @@ class CrimscriptCompiler:
         return ValueChange(amount=amount)
 
     def _parse_pointer_change(self) -> PointerChange:
+        """Parse a numeric pointer movement instruction."""
         token = self._advance()
         if not isinstance(token.val, int):
             compiler_err("Pointer change token must include an integer distance", CompilerSyntaxError)
@@ -176,6 +185,7 @@ class CrimscriptCompiler:
         return PointerChange(distance=distance)
 
     def _compile_statement(self, stmt: Statement) -> str:
+        """Convert a parsed AST statement into Brainfuck source code."""
         if isinstance(stmt, ValueChange):
             return '+' * stmt.amount if stmt.amount > 0 else '-' * (-stmt.amount)
         if isinstance(stmt, PointerChange):
@@ -196,6 +206,7 @@ class CrimscriptCompiler:
         compiler_err(f"Unknown statement type: {type(stmt).__name__}", CompilerSyntaxError)
 
     def _compile_print(self, stmt: PrintStmt) -> str:
+        """Compile a print statement to Brainfuck, either '.' or string output."""
         if stmt.text is None:
             return '.'
 
@@ -208,6 +219,7 @@ class CrimscriptCompiler:
         return ''.join(result)
 
     def _compile_input(self, stmt: InputStmt) -> str:
+        """Compile an input statement to Brainfuck, optionally emitting a prompt first."""
         code = []
         if stmt.prompt is not None:
             code.append(self._compile_print(PrintStmt(text=stmt.prompt)))
@@ -215,28 +227,33 @@ class CrimscriptCompiler:
         return ''.join(code)
 
     def _compile_until(self, stmt: UntilStmt) -> str:
+        """Compile an until loop into Brainfuck with offset checking and body code."""
         offset = '-' * stmt.target
         restore = '+' * stmt.target
         body = ''.join(self._compile_statement(child) for child in stmt.body)
         return f"{offset}[{restore}{body}{offset}]{restore}"
 
     def _peek(self) -> Token:
+        """Return the current token without consuming it."""
         if self.pos >= len(self.tokens):
             compiler_err("Unexpected end of input", CompilerSyntaxError)
         return self.tokens[self.pos]
 
     def _advance(self) -> Token:
+        """Consume and return the current token."""
         token = self._peek()
         self.pos += 1
         return token
 
     def _expect(self, expected_type: CrimTokenType) -> Token:
+        """Consume a token and verify it matches the expected type."""
         token = self._peek()
         if token.typ != expected_type:
             compiler_err(f"Expected {expected_type} but got {token.typ}", CompilerSyntaxError)
         return self._advance()
 
     def _eof(self) -> bool:
+        """Return True when the parser has consumed all tokens."""
         return self.pos >= len(self.tokens)
 
     def tokenise(self, code: list[str]) -> list[Token]:
