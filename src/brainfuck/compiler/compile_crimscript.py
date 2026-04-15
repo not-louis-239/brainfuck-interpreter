@@ -124,6 +124,10 @@ class CrimscriptCompiler:
             return self._parse_set()
         if token.typ == CrimTokenType.UNTIL:
             return self._parse_until()
+        if token.typ == CrimTokenType.MOVE:
+            return self._parse_move()
+        if token.typ == CrimTokenType.COPY:
+            return self._parse_copy()
         if token.typ in (CrimTokenType.VAL_INC, CrimTokenType.VAL_DEC):
             return self._parse_value_change()
         if token.typ in (CrimTokenType.PTR_INC, CrimTokenType.PTR_DEC):
@@ -226,6 +230,70 @@ class CrimscriptCompiler:
         distance = token.val if token.typ == CrimTokenType.PTR_INC else -token.val
         return PointerChange(distance=distance)
 
+    def _parse_macro_args(self) -> tuple[int, ...]:
+        """Parse a comma-separated list of integer macro arguments inside parentheses."""
+        args: list[int] = []
+
+        if self._peek().typ == CrimTokenType.BRACKET_R:
+            return tuple(args)
+
+        while True:
+            # Parse each arg one at a time
+            token = self._peek()
+            if token.typ in (CrimTokenType.VAL_INC, CrimTokenType.VAL_DEC):
+                token = self._advance()
+                if not isinstance(token.val, int):
+                    raise CompilerTypeError("Macro argument must be an integer", self.pos, self.code)
+                args.append(token.val if token.typ == CrimTokenType.VAL_INC else -token.val)
+            elif token.typ == CrimTokenType.INTEGER:
+                token = self._advance()
+                if not isinstance(token.val, int):
+                    raise CompilerTypeError("Macro argument must be an integer", self.pos, self.code)
+                args.append(token.val)
+            else:
+                raise CompilerTypeError("Macro argument must be an integer", self.pos, self.code)
+
+            if self._peek().typ == CrimTokenType.COMMA:
+                self._advance()
+                continue
+            break
+
+        return tuple(args)
+
+    def _parse_move(self) -> MoveStmt:
+        """Parse an mv() call, using either mv(dest) or mv(destmin, destmax)."""
+        self._expect(CrimTokenType.MOVE)
+        self._expect(CrimTokenType.BRACKET_L)
+
+        args = self._parse_macro_args()
+        self._expect(CrimTokenType.BRACKET_R)
+
+        if len(args) == 1:
+            start = end = args[0]
+        elif len(args) == 2:
+            start, end = args
+        else:
+            raise CompilerTypeError(f"mv() requires mv(dest) or mv(destmin, destmax), expected 1 or 2 args but received {len(args)}", self.pos, self.code)
+
+        return MoveStmt(delta_ptr_min=min(start, end), delta_ptr_max=max(start, end))
+
+    def _parse_copy(self) -> CopyStmt:
+        """Parse a cp() call with either cp(dest, tmp) or cp(destmin, destmax, tmp)."""
+        self._expect(CrimTokenType.COPY)
+        self._expect(CrimTokenType.BRACKET_L)
+
+        args = self._parse_macro_args()
+        self._expect(CrimTokenType.BRACKET_R)
+
+        if len(args) == 2:
+            dest, tmp = args
+            return CopyStmt(delta_ptr_min=dest, delta_ptr_max=dest, delta_ptr_tmp=tmp)
+        if len(args) == 3:
+            destmin, destmax, tmp = args
+            return CopyStmt(delta_ptr_min=min(destmin, destmax), delta_ptr_max=max(destmin, destmax), delta_ptr_tmp=tmp)
+
+        raise CompilerTypeError(f"cp() requires cp(dest, tmp) or cp(destmin, destmax, tmp), expected 2 or 3 args but received {len(args)}", self.pos, self.code)
+
     def _compile_statement(self, stmt: Statement) -> str:
         """Convert a parsed AST statement into Brainfuck source code."""
         if isinstance(stmt, ValueChange):
@@ -244,6 +312,10 @@ class CrimscriptCompiler:
             return '[-]' + ('+' * stmt.value)
         if isinstance(stmt, UntilStmt):
             return self._compile_until(stmt)
+        if isinstance(stmt, MoveStmt):
+            return ''  # TODO: parsed correctly; actual implementation may be inserted elsewhere
+        if isinstance(stmt, CopyStmt):
+            return ''  # TODO: parsed correctly; actual implementation may be inserted elsewhere
 
         raise CompilerSyntaxError(f"Unknown statement type: {type(stmt).__name__}", self.pos, self.code)
 
@@ -295,7 +367,7 @@ class CrimscriptCompiler:
     def _peek(self) -> Token:
         """Return the current token without consuming it."""
         if self.pos >= len(self.tokens):
-            raise CompilerSyntaxError("Unexpected end of input", self.pos, self.code)
+            raise CompilerSyntaxError("Unexpected EOF in input", self.pos, self.code)
         return self.tokens[self.pos]
 
     def _advance(self) -> Token:
@@ -379,6 +451,8 @@ class CrimscriptCompiler:
             (r'\buntil\b', lambda m: Token(CrimTokenType.UNTIL, m.group(0))),
             (r'\bset\b', lambda m: Token(CrimTokenType.SET, m.group(0))),
             (r'\bclear\b', lambda m: Token(CrimTokenType.CLEAR, m.group(0))),
+            (r'\bmv\b', lambda m: Token(CrimTokenType.MOVE, m.group(0))),  # move
+            (r'\bcp\b', lambda m: Token(CrimTokenType.COPY, m.group(0))),  # copy
 
             # Single operators (must come after condensed operations)
             (r'\+', lambda m: Token(CrimTokenType.VAL_INC, 1)),
@@ -391,6 +465,8 @@ class CrimscriptCompiler:
             (r'\}', lambda m: Token(CrimTokenType.BRACE_R, m.group(0))),
             (r'\(', lambda m: Token(CrimTokenType.BRACKET_L, m.group(0))),
             (r'\)', lambda m: Token(CrimTokenType.BRACKET_R, m.group(0))),
+            (r',', lambda m: Token(CrimTokenType.COMMA, m.group(0))),
+            (r':', lambda m: Token(CrimTokenType.COLON, m.group(0))),
             (r';', lambda m: Token(CrimTokenType.TERMINATOR, m.group(0))),
 
             # Whitespace (skip)
