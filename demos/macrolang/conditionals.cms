@@ -1,7 +1,3 @@
-# Example of Conditions in Crimscript
-
-```js
-
 // let's say for example we want to check if the cell is a 1 (ASCII 49)
 
 // first, read some user input and assign it to the memory cell
@@ -32,5 +28,3 @@ until 0 {
     >; print("The input was a 1!"); <  // mem offset to avoid tampering
     clear()  // finally, destroy the flag to exit the loop
 }
-
-```

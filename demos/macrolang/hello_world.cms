@@ -1,0 +1,28 @@
+/*
+
+Crimscript Demo Program: Hello World with Input Echo
+This program demonstrates basic Crimscript features:
+ - Printing strings and values
+ - Input operations
+ - Loops
+ - Comments
+
+*/
+
+print("Hello, World!");  // Print greeting
+
+input("Enter a character: ");  // Prompt for input
+
+print();  // Echo the input character
+
+// Now demonstrate a simple loop
+// Set a counter to 3
+>1;  // Move to next cell
+set(3);  // Set counter to 3
+
+until 0 {  // Loop until counter is 0
+    <1;  // Move back to data cell
+    print("Hi! ");  // Print message
+    >1;  // Move to counter
+    -1;  // Decrement counter
+}
