@@ -1,6 +1,6 @@
 /*  Number guessing game in Crimscript  */
 
-print("I'm thinking of a number from 1 to 9.")
+print("I'm thinking of a number from 1 to 9.\n")
 input("Enter your guess: ")
 
 // Set success flag initial value (1 right of stdin)
@@ -14,6 +14,9 @@ until 0 {
 
     // Kill the success flag
     >1; clear(); <1
+
+    // Now destroy the input
+    clear()
 }
 
 // Success code
@@ -34,3 +37,7 @@ until 0 {
 
     >2; clear(); <2
 }
+
+
+// end with a newline
+print("\n")

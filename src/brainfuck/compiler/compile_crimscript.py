@@ -70,6 +70,20 @@ class CrimscriptCompiler:
         self.code = "\n".join(processed)  # Store the full code for error reporting
         return processed
 
+    def _unescape_string(self, s: str) -> str:
+        """Unescape escape sequences in a string literal (including the surrounding quotes)."""
+
+        # Remove surrounding quotes
+        content = s[1:-1]
+
+        # Handle common escape sequences
+        content_replaced = content.replace('\\n', '\n').replace('\\t', '\t').replace('\\r', '\r').replace('\\"', '"').replace('\\\\', '\\')
+
+        # Handle escapes like "\xhh" for hex values
+        def replace_hex(match: re.Match) -> str:
+            return chr(int(match.group(1), 16))
+        return re.sub(r'\\x([0-9a-fA-F]{2})', replace_hex, content_replaced)
+
     def _parse_statement(self) -> Statement:
         """Parse the next top-level Crimscript statement from the token stream."""
         token = self._peek()
@@ -274,8 +288,8 @@ class CrimscriptCompiler:
             (r'//.*', None),  # Single-line comments - skip
             (r'/\*.*?\*/', None),  # Multi-line comments - skip
 
-            # Strings
-            (r'"([^"]*)"', lambda m: Token(CrimTokenType.STRING, m.group(1))),
+            # Strings (with escape sequence support)
+            (r'"(?:[^"\\]|\\.)*"', lambda m: Token(CrimTokenType.STRING, self._unescape_string(m.group(0)))),
 
             # Condensed operations (must come before single operators)
             (r'\+(\d+)', lambda m: Token(CrimTokenType.VAL_INC, int(m.group(1)))),
