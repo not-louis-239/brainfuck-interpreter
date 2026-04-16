@@ -1,3 +1,5 @@
+"""Module for generic Crimscript token types."""
+
 from enum import StrEnum
 from dataclasses import dataclass
 
@@ -15,8 +17,8 @@ class CrimTokenType(StrEnum):
     PRINT = 'print'
     INPUT = 'input'
     UNTIL = 'until'
-    SET = 'set'
     CLEAR = 'clear'
+    SET = 'set'
     MOVE = 'mv'   # move
     COPY = 'cp'   # copy
 

@@ -17,6 +17,8 @@ class BFBytecodeToken:
         self.typ = typ
         self.val = val
 
+# TODO: fix mismatches in syntax error reporting
+
 def convert_bf_to_bytecode(code: str) -> list[BFBytecodeToken]:
     """Converts Brainfuck source to optimized bytecode tokens,
     condensing chained operators into single tokens."""

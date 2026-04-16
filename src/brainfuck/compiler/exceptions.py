@@ -45,12 +45,16 @@ class CompilerValueError(CompilerSemanticError):
     or passing non-ASCII characters into `print()`."""
     pass
 
-class CompilerPtrOutOfBoundsError(CompilerSemanticError):
+class CompilerPtrError(CompilerSemanticError):
+    """Base class for all pointer errors."""
+    pass
+
+class CompilerPtrOutOfBoundsError(CompilerPtrError):
     """Raised when the compiler detects a pattern that would push
     the pointer out of bounds and cause a segmentation fault."""
     pass
 
-class CompilerPtrStabilityError(CompilerSemanticError):
+class CompilerPtrStabilityError(CompilerPtrError):
     """Raised when the compiler detects indeterminate pointer movement,
     which may cause a segmentation fault.
 

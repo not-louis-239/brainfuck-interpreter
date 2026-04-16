@@ -7,6 +7,7 @@ from .exceptions import (
     CompilerSemanticError,
     CompilerTypeError,
     CompilerValueError,
+    CompilerPtrError,
     CompilerPtrStabilityError,
     CompilerPtrOutOfBoundsError
 )
@@ -16,8 +17,9 @@ ERR_NAMES: dict[type[CompilerException] | type[CompilerWarning], str] = {
     CompilerWarning: "warning",
     CompilerSyntaxError: "syntax error",
     CompilerSemanticError: "semantic error",
-    CompilerTypeError: "type error",
-    CompilerValueError: "value error",
+    CompilerTypeError: "invalid argument type",
+    CompilerValueError: "invalid argument value",
+    CompilerPtrError: "pointer error",
     CompilerPtrStabilityError: "pointer stability error",
     CompilerPtrOutOfBoundsError: "pointer out of bounds error"
 }
