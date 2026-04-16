@@ -20,7 +20,7 @@ class Args:
     memsize: int
 
 def fatal_err(message: str) -> NoReturn:
-    print(f"{Path(__file__).name}: {message}", file=sys.stderr)
+    print(f"{Path(__file__).name}: fatal: {message}", file=sys.stderr)
     sys.exit(1)
 
 def parse_args() -> Args:

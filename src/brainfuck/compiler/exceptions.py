@@ -23,23 +23,38 @@ class CompilerWarning(Warning):
         self.code = code
 
 class CompilerSyntaxError(CompilerException):
-    """Raised when there is an error in the syntax of the macrolang code."""
+    """Raised when there is an error in the syntax of the Crimscript code."""
     pass
 
-class CompilerTypeError(CompilerException):
-    """Raised when there is a type error in the macrolang code."""
+class CompilerSemanticError(CompilerException):
+    """Raised for semantic errors.
+    This is when the syntax is correct but will cause undefined
+    behaviour or crashes at runtime."""
     pass
 
-class CompilerValueError(CompilerException):
-    """Raised when an invalid value is detected by the compiler.
-    e.g. `until -1`, as Brainfuck values can only span 0..255."""
+class CompilerTypeError(CompilerSemanticError):
+    """Raised when passing an incorrect type in Crimscript code.
 
-class CompilerMemoryError(CompilerException):
-    """Raised when the compiler detects a guaranteed
-    out-of-bounds memory access, which would cause a segmentation fault."""
+    e.g. `print(123)` <- 123 is an integer, not a string."""
     pass
 
-class CompilerMemoryWarning(CompilerWarning):
-    """Raised when the compiler detects a potential out-of-bounds memory access,
-    but cannot guarantee it will take effect and cause a segmentation fault."""
+class CompilerValueError(CompilerSemanticError):
+    """Raised when a value is detected by the compiler that is of the correct
+    type, but invalid.
+    e.g. `until -1`, as Brainfuck values can only span 0..255,
+    or passing non-ASCII characters into `print()`."""
+    pass
+
+class CompilerPtrOutOfBoundsError(CompilerSemanticError):
+    """Raised when the compiler detects a pattern that would push
+    the pointer out of bounds and cause a segmentation fault."""
+    pass
+
+class CompilerPtrStabilityError(CompilerSemanticError):
+    """Raised when the compiler detects indeterminate pointer movement,
+    which may cause a segmentation fault.
+
+    This is caused when displacement of the data pointer
+    inside a control structure is != 0 (i.e. number of `>` and `<` are unequal)
+    """
     pass

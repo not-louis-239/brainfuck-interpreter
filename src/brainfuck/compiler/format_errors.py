@@ -2,17 +2,24 @@ from ..utils.format_tools import COL_RESET, COL_ERR, COL_ERR_HIGHLIGHT, COL_WARN
 from ..utils.line_and_col import get_line_and_col
 from .exceptions import (
     CompilerException,
-    CompilerMemoryError,
+    CompilerWarning,
     CompilerSyntaxError,
+    CompilerSemanticError,
     CompilerTypeError,
-    CompilerWarning
+    CompilerValueError,
+    CompilerPtrStabilityError,
+    CompilerPtrOutOfBoundsError
 )
 
 ERR_NAMES: dict[type[CompilerException] | type[CompilerWarning], str] = {
-    CompilerSyntaxError: "syntax error",
-    CompilerTypeError: "type error",
-    CompilerMemoryError: "memory error",
+    CompilerException: "error",
     CompilerWarning: "warning",
+    CompilerSyntaxError: "syntax error",
+    CompilerSemanticError: "semantic error",
+    CompilerTypeError: "type error",
+    CompilerValueError: "value error",
+    CompilerPtrStabilityError: "pointer stability error",
+    CompilerPtrOutOfBoundsError: "pointer out of bounds error"
 }
 
 def format_err(err: CompilerException) -> str:
