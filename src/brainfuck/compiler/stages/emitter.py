@@ -37,8 +37,7 @@ class Emitter:
                 raise CompilerSyntaxError(f"Unknown statement type: {type(node).__name__}", node.metadata.pos, self.src_code)
         return bf_code
 
-# Stubs for compiling Crimscript AST nodes into BF
-# TODO: transfer methods
+# Functions for compiling Crimscript AST nodes into BF
 
 @Emitter.register(nodes.ValueChange)
 def compile_value_change(self: Emitter, node: nodes.ValueChange) -> str:
