@@ -7,7 +7,7 @@ from typing import NoReturn
 
 sys.path.insert(0, str(Path(__file__).parents[1] / "src"))
 
-from brainfuck.compiler.compile_crimscript import CrimscriptCompiler
+from brainfuck.compiler.compile_crimscript import CrimscriptDriver
 from brainfuck.compiler.exceptions import CompilerException
 from brainfuck.compiler.format_errors import format_err
 
@@ -58,7 +58,7 @@ def main():
     # If no output file is given, print the output to stdout.
 
     args = parse_args()
-    compiler = CrimscriptCompiler()
+    compiler = CrimscriptDriver()
 
     try:
         with open(args.input_path, "r") as file:
