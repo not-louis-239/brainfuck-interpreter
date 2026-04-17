@@ -5,7 +5,7 @@ from typing import Callable, TypeAlias
 from ..ast import nodes
 from ..ast.nodes import ASTNode, AbstractSyntaxTree
 from ..crim_tokens import Token, CrimTokenType
-from ..exceptions import CompilerSyntaxError, CompilerTypeError
+from ..exceptions import CompilerSyntaxError, CompilerTypeError, CompilerInternalError
 
 
 _ParseCallable: TypeAlias = Callable[["Parser"], ASTNode]
@@ -29,7 +29,7 @@ class Parser:
     def peek(self) -> Token:
         """Return the current token without consuming ("eating") it."""
         if self.pos >= len(self.tokens):
-            raise CompilerSyntaxError("Unexpected EOF in input", self.pos, self.code)
+            raise CompilerInternalError("Unexpected EOF in input", self.pos, self.code)
         return self.tokens[self.pos]
 
     def advance(self) -> Token:

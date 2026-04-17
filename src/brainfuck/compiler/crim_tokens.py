@@ -43,10 +43,10 @@ class CrimTokenType(StrEnum):
 
 @dataclass
 class TokenMetadata:
-    """Stores the location of the token in the source code.
+    """Stores the location of the token in the source code (COMMENTS INCLUDED!).
     This is abstracted out into a separate class in case more
     metadata needs to be added in the future."""
-    loc: tuple[int, int]
+    loc: int
 
 class Token:
     def __init__(
@@ -59,19 +59,39 @@ class Token:
         self.val = val
         self.metadata = metadata
 
-    def __repr__(self):
+    def format_str(self, src_code: list[str]):
         if self.metadata is not None:
             return (
                 "Token("
                 f"type={self.typ}, "
                 f"value={self.val}, "
-                f"loc={self.metadata.loc[0] + 1}:{self.metadata.loc[1] + 1}"
+                f"loc={get_line_and_col(src_code, self.metadata.loc)}"
                 ")"
             )
         return (
             "Token("
             f"type={self.typ}, "
             f"value={self.val}, "
-            f"<location unavailable>"
+            f"<no metadata>"
             ")"
         )
+
+def get_line_and_col(src_code: list[str], pos: int) -> tuple[int, int]:
+    """Translates a flat integer position into (line, col) using
+    a list of source code lines (COMMENTS INCLUDED!)."""
+
+    # Performance shouldn't matter too much here as it is only used
+    # once to format errors.
+
+    current_pos = 0
+    for line_num, line_content in enumerate(src_code):
+        line_len = len(line_content)
+        # Check if the position falls within this line
+        if current_pos <= pos < current_pos + line_len:
+            col = pos - current_pos
+            return line_num + 1, col + 1
+
+        current_pos += line_len
+
+    # Fallback for EOF or empty files
+    return len(src_code), 1

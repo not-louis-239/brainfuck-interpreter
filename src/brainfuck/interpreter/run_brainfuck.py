@@ -89,20 +89,22 @@ def validate_brainfuck(code: str) -> None:
             position=i, code=code
         )
 
+# used to allow transmitting info from the function
+# globals are usually bad practice and someday
+# I want to find a better solution but this will have
+# to do for now
 
-_ist = 0  # used to allow transmitting info from the function
-          # globals are usually bad practice and someday
-          # I want to find a better solution but this will have
-          # to do for now
+# this is used for error reporting in KeyboardInterrupt
+# scenarios where somehow it doesn't get caught
+# by run_brainfuck's try-except for some reason??
+_ist = 0
 
-          # this is used for error reporting in KeyboardInterrupt
-          # scenarios where somehow it doesn't get caught
-          # by run_brainfuck's try-except for some reason??
 def run_brainfuck(code: str, *, memsize: int, wrap: bool = False):
+    ist = 0
+
     try:
         mem: list[int] = [0] * memsize
         ptr = 0
-        ist = 0
         prog_len = len(code)
 
         while ist < prog_len:
@@ -185,6 +187,7 @@ def run_brainfuck(code: str, *, memsize: int, wrap: bool = False):
 
             # Move forward to next instruction
             ist += 1
+
     except KeyboardInterrupt:
         raise BFInterrupt(
             "program interrupted by user",

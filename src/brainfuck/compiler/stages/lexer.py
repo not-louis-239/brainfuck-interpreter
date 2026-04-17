@@ -1,7 +1,7 @@
 import re
 from ..crim_tokens import Token, TokenMetadata, CrimTokenType
 from ..exceptions import CompilerSyntaxError
-from ...utils.line_and_col import get_line_and_col
+from ..crim_tokens import get_line_and_col
 
 class Lexer:
     """Converts Crimscript source code into Crimscript tokens.

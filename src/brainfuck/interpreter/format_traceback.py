@@ -1,6 +1,6 @@
 from .exceptions import BrainfuckException, BFSegmentationFault, BFSyntaxError, BFInterrupt
 from ..utils.format_tools import COL_RESET, COL_ERR, COL_ERR_HIGHLIGHT
-from ..utils.line_and_col import get_line_and_col
+from ..compiler.crim_tokens import get_line_and_col
 
 ERROR_NAMES: dict[type[BrainfuckException], str] = {
     BFSegmentationFault: "segmentation fault",
