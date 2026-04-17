@@ -109,9 +109,16 @@ def compile_until(self: Emitter, node: nodes.UntilStmt):
 
 @Emitter.register(nodes.MoveStmt)
 def compile_move(self: Emitter, node: nodes.MoveStmt) -> str:
-    return ""  # TODO: rest of implementation
-    # This is a stub that returns an empty string so as not to crash
-    # the emitter
+    dptr_min = node.delta_ptr_min
+    dptr_max = node.delta_ptr_max
+    diff = dptr_max - dptr_min
+
+    mv_code = "["
+
+    # TODO: rest of implementation
+
+    mv_code += "]"
+    return mv_code
 
 @Emitter.register(nodes.CopyStmt)
 def compile_copy(self: Emitter, node: nodes.CopyStmt) -> str:
