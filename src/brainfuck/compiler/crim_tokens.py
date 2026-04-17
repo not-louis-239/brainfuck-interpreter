@@ -46,7 +46,7 @@ class TokenMetadata:
     """Stores the location of the token in the source code (COMMENTS INCLUDED!).
     This is abstracted out into a separate class in case more
     metadata needs to be added in the future."""
-    loc: int
+    pos: int
 
 class Token:
     def __init__(
@@ -65,7 +65,7 @@ class Token:
                 "Token("
                 f"type={self.typ}, "
                 f"value={self.val}, "
-                f"loc={get_line_and_col(src_code, self.metadata.loc)}"
+                f"loc={get_line_and_col(src_code, self.metadata.pos)}"
                 ")"
             )
         return (

@@ -31,7 +31,7 @@ class Emitter:
             try:
                 bf_code += self.compile_stmt(node)
             except KeyError:
-                raise CompilerSyntaxError(f"Unknown statement type: {type(node).__name__}", node.metadata.loc, self.code)
+                raise CompilerSyntaxError(f"Unknown statement type: {type(node).__name__}", node.metadata.pos, self.code)
         return bf_code
 
 # Stubs for compiling Crimscript AST nodes into BF

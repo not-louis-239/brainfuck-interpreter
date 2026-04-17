@@ -5,18 +5,18 @@ class CompilerException(Exception):
     """Base class for compiler exceptions.
     These are fatal and will prevent forming the finished Brainfuck file.
     Punishable by an exit code of 1 and a message to stderr."""
-    def __init__(self, msg: str, pos: int, code: str):
+    def __init__(self, msg: str, pos: int, src_code: list[str]):
         super().__init__(msg)
         self.msg = msg
         self.pos = pos
-        self.code = code
+        self.code = src_code
 
 class CompilerWarning(Warning):
     """Base class for compiler warnings.
     These are non-fatal and will not prevent forming the finished Brainfuck file,
     but indicate potential issues in the code that the user should be aware of.
     Should print a warning to stderr, but will not affect the exit code."""
-    def __init__(self, msg: str, pos: int, code: str):
+    def __init__(self, msg: str, pos: int, code: list[str]):
         super().__init__(msg)
         self.msg = msg
         self.pos = pos
