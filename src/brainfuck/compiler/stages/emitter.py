@@ -23,15 +23,15 @@ class Emitter:
     def compile_stmt(self, node: ASTNode) -> str:
         return self.EMIT_REGISTRY[type(node)](node)
 
-    def emit(self, ast: AbstractSyntaxTree, code: str) -> str:
-        self.code = code
+    def emit(self, ast: AbstractSyntaxTree, src_code: list[str]) -> str:
+        self.src_code = src_code
 
         bf_code = ""
         for node in ast:
             try:
                 bf_code += self.compile_stmt(node)
             except KeyError:
-                raise CompilerSyntaxError(f"Unknown statement type: {type(node).__name__}", node.metadata.pos, self.code)
+                raise CompilerSyntaxError(f"Unknown statement type: {type(node).__name__}", node.metadata.pos, self.src_code)
         return bf_code
 
 # Stubs for compiling Crimscript AST nodes into BF
