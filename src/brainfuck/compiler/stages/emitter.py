@@ -1,18 +1,21 @@
-from typing import Callable
+from typing import Callable, TypeAlias, TypeVar
 
 from ..ast import nodes
 from ..ast.nodes import AbstractSyntaxTree, ASTNode
 from ..exceptions import CompilerSyntaxError, CompilerInternalError
 
+N = TypeVar("N", bound=ASTNode)
+_EmitCallable = Callable[["Emitter", N], str]
+
 class Emitter:
     """Emits Brainfuck source code from an Abstract Syntax Tree (AST).
     Basically the converter from a Crimscript AST to raw Brainfuck."""
 
-    EMIT_REGISTRY: dict[type[ASTNode], Callable[[ASTNode], str]] = {}
+    EMIT_REGISTRY: dict[type[ASTNode], _EmitCallable] = {}
 
     @classmethod
     def register(cls, node_type: type[ASTNode]):
-        def wrapper(fn: Callable):
+        def wrapper(fn: _EmitCallable) -> _EmitCallable:
             cls.EMIT_REGISTRY[node_type] = fn
             return fn
         return wrapper
@@ -21,7 +24,7 @@ class Emitter:
         pass
 
     def compile_stmt(self, node: ASTNode) -> str:
-        return self.EMIT_REGISTRY[type(node)](node)
+        return self.EMIT_REGISTRY[type(node)](self, node)
 
     def emit(self, ast: AbstractSyntaxTree, src_code: list[str]) -> str:
         self.src_code = src_code
@@ -81,10 +84,12 @@ def compile_input(self: Emitter, node: nodes.InputStmt) -> str:
     """Compile an input statement to Brainfuck, optionally emitting a prompt first."""
     code: list[str] = []
     if node.prompt is not None:
-        compile_print = getattr(self, 'compile_print', None)  # dummy function
-        if compile_print is None:
-            raise CompilerInternalError("fatal: missing function definition: 'compile_print'")
-        code.append(compile_print(nodes.PrintStmt(text=node.prompt, metadata=node.metadata)))
+        code.append(
+            Emitter.EMIT_REGISTRY[nodes.PrintStmt](
+                self,
+                nodes.PrintStmt(text=node.prompt, metadata=node.metadata),
+            )
+        )
     code.append(',')
     return ''.join(code)
 
