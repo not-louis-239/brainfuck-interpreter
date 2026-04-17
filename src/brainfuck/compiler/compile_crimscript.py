@@ -22,7 +22,7 @@ class CrimscriptDriver:
 
         tokens = self.lexer.tokenise(src_code)
         ast = self.parser.parse(tokens, src_code=src_code)
-        self.validator.validate(ast)
+        self.validator.validate(ast, src_code=src_code)
         compiled_code = self.emitter.emit(ast, src_code=src_code)
         optimised_code = self.optimiser.optimise(compiled_code)
 
