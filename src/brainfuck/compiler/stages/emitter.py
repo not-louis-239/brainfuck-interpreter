@@ -36,12 +36,12 @@ class Emitter:
         except KeyError:
             raise CompilerInternalError(f"No emit function registered for type {type(node).__name__}", node.metadata.pos)
 
-    def emit(self, ast: AbstractSyntaxTree, src_code: list[str]) -> str:
+    def emit(self, ast: AbstractSyntaxTree, src_code: list[str], debug_symbols: bool = False) -> str:
         self.src_code = src_code  # required for error reporting
 
         bf_code = ""
         for node in ast:
-            bf_code += self.compile_stmt(node)
+            bf_code += self.compile_stmt(node, debug_symbols=debug_symbols)
         return bf_code
 
 # Functions for compiling Crimscript AST nodes into BF

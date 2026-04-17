@@ -23,13 +23,15 @@ def fatal_err(message: str) -> NoReturn:
     sys.exit(1)
 
 def parse_args() -> Args:
+    DEBUG_ARGS: tuple[str, ...] = ("--debug", "-d")
+
     args = sys.argv[1:]
 
     if not args:
         fatal_err("missing args. run with -h or --help for usage information")
 
     if args[0] in ("-h", "--help"):
-        print(f"usage: {sys.argv[0]} <input_path> [output_path] [--allow-clobber]")
+        print(f"usage: {sys.argv[0]} <input_path> [output_path] [--allow-clobber] [{" ".join(DEBUG_ARGS)}]")
         sys.exit(0)
 
     danger_allow_clobber = False
@@ -42,11 +44,10 @@ def parse_args() -> Args:
         args = [a for a in args if a != "--allow-clobber"]
 
     # Check for --debug flag and remove it from args if present
-    debug_args = ("--debug", "-d")
-    if any(d in args for d in debug_args):
-        print("--debug flag enabled. The compiler will add debug symbols to the output Brainfuck code.")
+    if any(d in args for d in DEBUG_ARGS):
+        print("(-d, --debug) flag enabled. The compiler will add debug symbols to the output Brainfuck code.")
         debug_symbols_enabled = True
-        args = [a for a in args if a not in debug_args]
+        args = [a for a in args if a not in DEBUG_ARGS]
 
     if len(args) not in (1, 2):
         fatal_err("invalid number of arguments. run with -h for usage information")
