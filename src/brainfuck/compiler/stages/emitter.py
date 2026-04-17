@@ -109,19 +109,73 @@ def compile_until(self: Emitter, node: nodes.UntilStmt):
 
 @Emitter.register(nodes.MoveStmt)
 def compile_move(self: Emitter, node: nodes.MoveStmt) -> str:
+    get_ptr_instructions: Callable[[int], str] = lambda displacement: ">" * displacement if displacement > 0 else "<" * -displacement
+
     dptr_min = node.delta_ptr_min
     dptr_max = node.delta_ptr_max
     diff = dptr_max - dptr_min
 
     mv_code = "["
 
-    # TODO: rest of implementation
+    # Move to minimum location
+    mv_code += get_ptr_instructions(dptr_min)
+    # Copy from the range of min loc to max loc
+    mv_code += ">".join("+" for _ in range(diff + 1))
+    # Move back to the original location
+    mv_code += get_ptr_instructions(-dptr_max)
+    # Decrement src location
+    mv_code += "-"
 
     mv_code += "]"
     return mv_code
 
 @Emitter.register(nodes.CopyStmt)
 def compile_copy(self: Emitter, node: nodes.CopyStmt) -> str:
-    return ""  # TODO: rest of implementation
-    # This is a stub that returns an empty string so as not to crash
-    # the emitter
+    # cp() is basically two mv() operations
+    # one to cast src to destmin:destmax AND tmp,
+    # and one to restore src from tmp
+
+    # we need the second mv() to restore src from tmp
+    # because the first mv() destroys src
+    # we can reuse compile_move() for this
+
+    get_ptr_instructions: Callable[[int], str] = lambda displacement: ">" * displacement if displacement > 0 else "<" * -displacement
+
+    compile_mv = Emitter.EMIT_REGISTRY[nodes.MoveStmt]
+
+    destmin = node.delta_ptr_min
+    destmax = node.delta_ptr_max
+    tmp = node.delta_ptr_tmp
+    diff = destmax - destmin
+
+    cp_code = "["
+
+    # Cast src to destmin:destmax AND tmp
+    # We can't use compile_mv() because it doesn't
+    # support moving to more than one range
+
+    # Move to minimum location
+    cp_code += "[" + get_ptr_instructions(destmin)
+    # Copy from the range of min loc to max loc
+    cp_code += ">".join("+" for _ in range(diff + 1))
+    # Now move to tmp and add one point there
+    cp_code += get_ptr_instructions(tmp - destmax) + "+"
+    # Move back to src and decrement it by 1
+    cp_code += get_ptr_instructions(-tmp) + "-]"
+
+    # Move to tmp
+    cp_code += get_ptr_instructions(tmp)
+
+    # Restore src from tmp
+    cp_code += compile_mv(self, nodes.MoveStmt(
+        metadata=node.metadata,
+        delta_ptr_min=-tmp,
+        delta_ptr_max=-tmp
+    ))
+
+    # Move back from tmp -> src
+    cp_code += get_ptr_instructions(-tmp)
+
+    cp_code += "]"
+
+    return cp_code
