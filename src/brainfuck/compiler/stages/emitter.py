@@ -1,8 +1,8 @@
-from typing import Callable, TypeAlias, TypeVar
+from typing import Callable, TypeVar
 
 from ..ast import nodes
 from ..ast.nodes import AbstractSyntaxTree, ASTNode
-from ..exceptions import CompilerSyntaxError, CompilerInternalError
+from ..exceptions import CompilerSyntaxError
 
 N = TypeVar("N", bound=ASTNode)
 _EmitCallable = Callable[["Emitter", N], str]

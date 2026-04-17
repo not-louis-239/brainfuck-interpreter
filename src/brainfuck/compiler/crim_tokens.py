@@ -61,13 +61,13 @@ class Token:
         self.val = val
         self.metadata = metadata
 
-    def format_str(self, src_code: list[str]):
+    def __repr__(self):
         if self.metadata is not None:
             return (
                 "Token("
                 f"type={self.typ}, "
                 f"value={self.val}, "
-                f"loc={get_line_and_col(src_code, self.metadata.pos)}"
+                f"pos={self.metadata.pos}"
                 ")"
             )
         return (

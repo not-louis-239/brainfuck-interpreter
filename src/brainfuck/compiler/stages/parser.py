@@ -28,34 +28,35 @@ class Parser:
 
     def peek(self) -> Token:
         """Return the current token without consuming ("eating") it."""
-        if self.pos >= len(self.tokens):
-            raise CompilerInternalError("Unexpected EOF in input", self.pos, self.src_code)
-        return self.tokens[self.pos]
+        if self.eof():
+            raise CompilerInternalError("Unexpected EOF in input")
+        return self.tokens[self.token_pos]
 
     def advance(self) -> Token:
         """Eats and returns the current token before moving to the next one."""
         token = self.peek()
-        self.pos += 1
+        self.token_pos += 1
         return token
 
     def expect(self, expected_type: CrimTokenType) -> Token:
         """Consume a token and verify it matches the expected type."""
         token = self.peek()
         if token.typ != expected_type:
-            raise CompilerSyntaxError(f"Expected {expected_type} but got {token.typ}", self.pos, self.src_code)
+            assert token.metadata is not None
+            raise CompilerSyntaxError(f"Expected {expected_type} but got {token.typ}", token.metadata.pos, self.src_code)
         return self.advance()
 
     def eof(self) -> bool:
         """Return True when the parser has consumed all tokens."""
-        return self.pos >= len(self.tokens)
+        return self.token_pos >= len(self.tokens)
 
-    def parse_macro_args(self: Parser) -> tuple[int | str, ...]:
+    def parse_macro_args(self: Parser) -> tuple[Token, ...]:
         """Parse a comma-separated list of macro arguments inside parentheses.
         So far, the only supported types are ints or strings."""
         if self.peek().typ == CrimTokenType.BRACKET_R:
             return ()
 
-        args: list[int | str] = []
+        args: list[Token] = []
 
         while True:
             # Parse each arg one at a time
@@ -63,15 +64,20 @@ class Parser:
             if token.typ in (CrimTokenType.VAL_INC, CrimTokenType.VAL_DEC):
                 token = self.advance()
                 if not isinstance(token.val, int):
-                    raise CompilerTypeError(f"Invalid macro argument used with value delta: {token}", self.pos, self.src_code)
-                args.append(token.val if token.typ == CrimTokenType.VAL_INC else -token.val)
+                    assert token.metadata is not None
+                    raise CompilerTypeError(f"Invalid macro argument used with value delta: {token}", token.metadata.pos, self.src_code)
+
+                # Cast the token to an integer token if it is being used in the context of a macro argument
+                args.append(Token(CrimTokenType.INTEGER, token.val if token.typ == CrimTokenType.VAL_INC else -token.val, token.metadata))
             elif token.typ in (CrimTokenType.STRING, CrimTokenType.INTEGER):
                 token = self.advance()
                 if not isinstance(token.val, int) or isinstance(token.val, str):
-                    raise CompilerTypeError(f"Invalid macro argument: {token}", self.pos, self.src_code)
-                args.append(token.val)
+                    assert token.metadata is not None
+                    raise CompilerTypeError(f"Invalid macro argument: {token}", token.metadata.pos, self.src_code)
+                args.append(token)
             else:
-                raise CompilerTypeError(f"Invalid macro argument: {token}", self.pos, self.src_code)
+                assert token.metadata is not None
+                raise CompilerTypeError(f"Invalid macro argument: {token}", token.metadata.pos, self.src_code)
 
             if self.peek().typ == CrimTokenType.COMMA:
                 self.advance()
@@ -88,7 +94,8 @@ class Parser:
         try:
             return self.PARSE_REGISTRY[token.typ](self)
         except KeyError:
-            raise CompilerSyntaxError(f"Unexpected token type: {token.typ}", self.pos, self.src_code)
+            assert token.metadata is not None
+            raise CompilerSyntaxError(f"Unexpected token type: {token.typ}", pos=token.metadata.pos, src_code=self.src_code)
 
     def parse(self, tokens: list[Token], src_code: list[str]) -> AbstractSyntaxTree:
         """Parse a list of tokens into an AST (Abstract Syntax Tree),
@@ -96,7 +103,7 @@ class Parser:
         You can imagine that it "eats" the tokens."""
 
         self.tokens = tokens
-        self.pos: int = 0
+        self.token_pos: int = 0
         self.src_code = src_code
         ast: AbstractSyntaxTree = []
 
@@ -115,7 +122,8 @@ class Parser:
 def parse_value_change(self: Parser) -> nodes.ValueChange:
     token = self.advance()
     if not isinstance(token.val, int):
-        raise CompilerTypeError("Value change token must include an integer count", self.pos, self.src_code)
+        assert token.metadata is not None
+        raise CompilerTypeError("Value change token must include an integer count", pos=token.metadata.pos, src_code=self.src_code)
 
     amount = token.val if token.typ == CrimTokenType.VAL_INC else -token.val
 
@@ -127,7 +135,8 @@ def parse_ptr_change(self: Parser) -> nodes.PointerChange:
     """Parse a numeric pointer movement instruction."""
     token = self.advance()
     if not isinstance(token.val, int):
-        raise CompilerTypeError("Pointer change token must include an integer distance", self.pos, self.src_code)
+        assert token.metadata is not None
+        raise CompilerTypeError("Pointer change token must include an integer distance", pos=token.metadata.pos, src_code=self.src_code)
 
     distance = token.val if token.typ == CrimTokenType.PTR_INC else -token.val
 
@@ -185,29 +194,33 @@ def parse_set(self: Parser) -> nodes.SetStmt:
     start_token = self.expect(CrimTokenType.SET)
     self.expect(CrimTokenType.BRACKET_L)
 
-    if self.peek().typ != CrimTokenType.INTEGER:
-        raise CompilerTypeError("set() requires an integer argument", self.pos, self.src_code)
+    if (bad_token := self.peek()).typ != CrimTokenType.INTEGER:
+        assert bad_token.metadata is not None
+        raise CompilerTypeError("set() requires an integer argument", bad_token.metadata.pos, self.src_code)
 
-    value = self.advance().val
+    token = self.advance()
     self.expect(CrimTokenType.BRACKET_R)
 
-    if not isinstance(value, int):
-        raise CompilerTypeError("set() argument must be an integer", self.pos, self.src_code)
+    if not isinstance(token.val, int):
+        assert token.metadata is not None
+        raise CompilerTypeError(f"set() argument must be an integer, got {token.val}", token.metadata.pos, self.src_code)
 
     assert start_token.metadata is not None
-    return nodes.SetStmt(value=value, metadata=start_token.metadata)
+    return nodes.SetStmt(value=token.val, metadata=start_token.metadata)
 
 @Parser.register(CrimTokenType.UNTIL)
 def parse_until(self: Parser) -> nodes.UntilStmt:
     """Parse an until N { ... } loop and its nested statement body."""
     start_token = self.expect(CrimTokenType.UNTIL)
 
-    if self.peek().typ != CrimTokenType.INTEGER:
-        raise CompilerTypeError("until target must be an integer", self.pos, self.src_code)
+    if (bad_token := self.peek()).typ != CrimTokenType.INTEGER:
+        assert bad_token.metadata is not None
+        raise CompilerTypeError("until target must be an integer", bad_token.metadata.pos, self.src_code)
 
-    target = self.advance().val
+    target = (token := self.advance()).val
     if not isinstance(target, int):
-        raise CompilerTypeError("until target must be an integer", self.pos, self.src_code)
+        assert token.metadata is not None
+        raise CompilerTypeError("until target must be an integer", token.metadata.pos, self.src_code)
 
     self.expect(CrimTokenType.BRACE_L)
     body: list[ASTNode] = []
@@ -237,16 +250,20 @@ def parse_move(self: Parser) -> nodes.MoveStmt:
     if len(args) == 1:
         start = args[0]
         if not isinstance(start, int):
-            raise CompilerTypeError(f"invalid argument: not an integer: {start}", self.pos, self.src_code)
+            assert start.metadata is not None
+            raise CompilerTypeError(f"invalid argument: not an integer: {start}", start.metadata.pos, self.src_code)
         end = start
     elif len(args) == 2:
         start, end = args
         if not isinstance(start, int):
-            raise CompilerTypeError(f"invalid argument: not an integer: {start}", self.pos, self.src_code)
+            assert start.metadata is not None
+            raise CompilerTypeError(f"invalid argument: not an integer: {start}", start.metadata.pos, self.src_code)
         if not isinstance(end, int):
-            raise CompilerTypeError(f"invalid argument: not an integer: {end}", self.pos, self.src_code)
+            assert end.metadata is not None
+            raise CompilerTypeError(f"invalid argument: not an integer: {end}", end.metadata.pos, self.src_code)
     else:
-        raise CompilerTypeError(f"mv() requires mv(dest) or mv(destmin, destmax), expected 1 or 2 args but received {len(args)}", self.pos, self.src_code)
+        assert start_token.metadata is not None
+        raise CompilerTypeError(f"mv() requires mv(dest) or mv(destmin, destmax), expected 1 or 2 args but received {len(args)}", start_token.metadata.pos, self.src_code)
 
     assert start_token.metadata is not None
     return nodes.MoveStmt(delta_ptr_min=min(start, end), delta_ptr_max=max(start, end), metadata=start_token.metadata)
@@ -267,24 +284,27 @@ def parse_copy(self: Parser) -> nodes.CopyStmt:
         dest, tmp = args
 
         if not isinstance(dest, int):
-            raise CompilerTypeError(f"invalid argument: not an integer: {dest}", pos=self.pos, src_code=self.src_code)
+            assert dest.metadata is not None
+            raise CompilerTypeError(f"invalid argument: not an integer: {dest}", pos=dest.metadata.pos, src_code=self.src_code)
         if not isinstance(tmp, int):
-            raise CompilerTypeError(f"invalid argument: not an integer: {tmp}", pos=self.pos, src_code=self.src_code)
+            assert tmp.metadata is not None
+            raise CompilerTypeError(f"invalid argument: not an integer: {tmp}", pos=tmp.metadata.pos, src_code=self.src_code)
 
         return nodes.CopyStmt(delta_ptr_min=dest, delta_ptr_max=dest, delta_ptr_tmp=tmp, metadata=metadata)
     if len(args) == 3:
         destmin, destmax, tmp = args
 
         if not isinstance(destmin, int):
-            raise CompilerTypeError(f"invalid argument: not an integer: {destmin}", pos=self.pos, src_code=self.src_code)
+            assert destmin.metadata is not None
+            raise CompilerTypeError(f"invalid argument: not an integer: {destmin}", pos=destmin.metadata.pos, src_code=self.src_code)
         if not isinstance(destmax, int):
-            raise CompilerTypeError(f"invalid argument: not an integer: {destmax}", pos=self.pos, src_code=self.src_code)
+            assert destmax.metadata is not None
+            raise CompilerTypeError(f"invalid argument: not an integer: {destmax}", pos=destmax.metadata.pos, src_code=self.src_code)
         if not isinstance(tmp, int):
-            raise CompilerTypeError(f"invalid argument: not an integer: {tmp}", pos=self.pos, src_code=self.src_code)
+            assert tmp.metadata is not None
+            raise CompilerTypeError(f"invalid argument: not an integer: {tmp}", pos=tmp.metadata.pos, src_code=self.src_code)
 
         return nodes.CopyStmt(delta_ptr_min=min(destmin, destmax), delta_ptr_max=max(destmin, destmax), delta_ptr_tmp=tmp, metadata=metadata)
 
-    raise CompilerTypeError(f"cp() requires cp(dest, tmp) or cp(destmin, destmax, tmp), expected 2 or 3 args but received {len(args)}", self.pos, self.src_code)
-
-
-
+    assert start_token.metadata is not None
+    raise CompilerTypeError(f"cp() requires cp(dest, tmp) or cp(destmin, destmax, tmp), expected 2 or 3 args but received {len(args)}", start_token.metadata.pos, self.src_code)
