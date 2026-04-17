@@ -2,7 +2,8 @@ from typing import Callable, TypeVar
 
 from ..ast import nodes
 from ..ast.nodes import AbstractSyntaxTree, ASTNode
-from ..exceptions import CompilerSyntaxError, CompilerInternalError
+from ..get_line_and_col import get_line_and_col
+from ..exceptions import CompilerInternalError
 
 N = TypeVar("N", bound=ASTNode)
 _EmitCallable = Callable[["Emitter", N], str]
@@ -25,13 +26,23 @@ class Emitter:
 
     def compile_stmt(self, node: ASTNode) -> str:
         try:
-            return self.EMIT_REGISTRY[type(node)](self, node)
+            line, col = get_line_and_col(src_code=self.src_code, pos=node.metadata.pos)
+
+            # Basic "debug symbols" - right now just line and col number of the symbol
+            db_symbol = f"({line}:{col})"
+            bf_code = self.EMIT_REGISTRY[type(node)](self, node)
+
+            return f"{db_symbol} {bf_code}"
         except KeyError:
             raise CompilerInternalError(f"No emit function registered for type {type(node).__name__}", node.metadata.pos)
 
     def emit(self, ast: AbstractSyntaxTree, src_code: list[str]) -> str:
         self.src_code = src_code  # required for error reporting
-        return "".join([self.compile_stmt(stmt) for stmt in ast])
+
+        bf_code = ""
+        for node in ast:
+            bf_code += self.compile_stmt(node)
+        return bf_code
 
 # Functions for compiling Crimscript AST nodes into BF
 
