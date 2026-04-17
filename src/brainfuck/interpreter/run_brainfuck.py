@@ -65,7 +65,7 @@ def convert_bf_to_bytecode(code: str) -> list[BFBytecodeToken]:
 
     return bytecode
 
-def validate_brainfuck(code: str) -> None:
+def validate_brainfuck(code: list[str]) -> None:
     stack: list[int] = []
 
     for i, ch in enumerate(code):
@@ -77,7 +77,7 @@ def validate_brainfuck(code: str) -> None:
                 # unmatched loop end
                 raise BFSyntaxError(
                     f"unmatched '{BrainfuckKeywords.LOOP_END}'",
-                    position=i, code=code
+                    position=i, src_code=code
                 )
             stack.pop()
 
@@ -86,7 +86,7 @@ def validate_brainfuck(code: str) -> None:
         i = stack[-1]
         raise BFSyntaxError(
             f"unmatched '{BrainfuckKeywords.LOOP_START}'",
-            position=i, code=code
+            position=i, src_code=code
         )
 
 # used to allow transmitting info from the function
@@ -99,19 +99,19 @@ def validate_brainfuck(code: str) -> None:
 # by run_brainfuck's try-except for some reason??
 _ist = 0
 
-def run_brainfuck(code: str, *, memsize: int, wrap: bool = False):
+def run_brainfuck(src_code: list[str], *, memsize: int, wrap: bool = False):
     ist = 0
 
     try:
         mem: list[int] = [0] * memsize
         ptr = 0
-        prog_len = len(code)
+        prog_len = len(src_code)
 
         while ist < prog_len:
             global _ist
             _ist = ist
 
-            char = code[ist]
+            char = src_code[ist]
 
             if char == BrainfuckKeywords.VAL_INC:
                 mem[ptr] = (mem[ptr] + 1) % 256
@@ -127,7 +127,7 @@ def run_brainfuck(code: str, *, memsize: int, wrap: bool = False):
                     else:
                         raise BFSegmentationFault(
                             f"access violation at far-right of memory",
-                            position=ist, code=code
+                            position=ist, src_code=src_code
                         )
 
             elif char == BrainfuckKeywords.PTR_DEC:
@@ -138,7 +138,7 @@ def run_brainfuck(code: str, *, memsize: int, wrap: bool = False):
                     else:
                         raise BFSegmentationFault(
                             f"access violation at far-left of memory",
-                            position=ist, code=code
+                            position=ist, src_code=src_code
                         )
 
             elif char == BrainfuckKeywords.STDOUT:
@@ -162,11 +162,11 @@ def run_brainfuck(code: str, *, memsize: int, wrap: bool = False):
                         if ist >= prog_len:
                             raise BFSyntaxError(
                                 f"unmatched '{BrainfuckKeywords.LOOP_START}'",
-                                position=ist, code=code
+                                position=ist, src_code=src_code
                             )
-                        if code[ist] == BrainfuckKeywords.LOOP_START:
+                        if src_code[ist] == BrainfuckKeywords.LOOP_START:
                             depth += 1
-                        elif code[ist] == BrainfuckKeywords.LOOP_END:
+                        elif src_code[ist] == BrainfuckKeywords.LOOP_END:
                             depth -= 1
 
             elif char == BrainfuckKeywords.LOOP_END:
@@ -178,11 +178,11 @@ def run_brainfuck(code: str, *, memsize: int, wrap: bool = False):
                         if ist < 0:
                             raise BFSyntaxError(
                                 f"unmatched '{BrainfuckKeywords.LOOP_END}'",
-                                position=ist, code=code
+                                position=ist, src_code=src_code
                             )
-                        if code[ist] == BrainfuckKeywords.LOOP_END:
+                        if src_code[ist] == BrainfuckKeywords.LOOP_END:
                             depth += 1
-                        elif code[ist] == BrainfuckKeywords.LOOP_START:
+                        elif src_code[ist] == BrainfuckKeywords.LOOP_START:
                             depth -= 1
 
             # Move forward to next instruction
@@ -191,5 +191,5 @@ def run_brainfuck(code: str, *, memsize: int, wrap: bool = False):
     except KeyboardInterrupt:
         raise BFInterrupt(
             "program interrupted by user",
-            position=ist, code=code
+            position=ist, src_code=src_code
         )

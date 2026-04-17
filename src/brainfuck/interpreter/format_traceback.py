@@ -9,9 +9,9 @@ ERROR_NAMES: dict[type[BrainfuckException], str] = {
 }
 
 def format_bf_traceback(e: BrainfuckException) -> str:
-    line, col = get_line_and_col(e.code, e.position)
+    line, col = get_line_and_col(e.src_code, e.position)
 
-    lines = e.code.splitlines()
+    lines = e.src_code
     src_line = lines[line - 1] if line - 1 < len(lines) else ""
 
     # trim line length
