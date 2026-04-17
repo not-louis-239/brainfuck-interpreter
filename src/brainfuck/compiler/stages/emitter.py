@@ -2,8 +2,8 @@ from typing import Callable, TypeVar
 
 from ..ast import nodes
 from ..ast.nodes import AbstractSyntaxTree, ASTNode
-from ..get_line_and_col import get_line_and_col
 from ..exceptions import CompilerInternalError
+from ..debug_info import DebugInfo, CrimscriptDebugSymbol
 
 N = TypeVar("N", bound=ASTNode)
 _EmitCallable = Callable[["Emitter", N], str]
@@ -26,23 +26,27 @@ class Emitter:
 
     def compile_stmt(self, node: ASTNode) -> str:
         try:
-            line, col = get_line_and_col(src_code=self.src_code, pos=node.metadata.pos)
-
-            # Basic "debug symbols" - right now just line and col number of the symbol
-            db_symbol = f"({line}:{col})"
-            bf_code = self.EMIT_REGISTRY[type(node)](self, node)
-
-            return f"{db_symbol} {bf_code}"
+            return self.EMIT_REGISTRY[type(node)](self, node)
         except KeyError:
             raise CompilerInternalError(f"No emit function registered for type {type(node).__name__}", node.metadata.pos)
 
-    def emit(self, ast: AbstractSyntaxTree, src_code: list[str], debug_symbols: bool = False) -> str:
+    def emit(self, ast: AbstractSyntaxTree, src_code: list[str], debug_symbols: bool = False) -> tuple[str, DebugInfo | None]:
         self.src_code = src_code  # required for error reporting
 
         bf_code = ""
-        for node in ast:
-            bf_code += self.compile_stmt(node, debug_symbols=debug_symbols)
-        return bf_code
+        bf_position = 0  # Track current BF instruction position
+        debug_info = DebugInfo(src_code=src_code) if debug_symbols else None
+
+        for cms_node in ast:
+            node_bf = self.compile_stmt(cms_node)
+            if debug_symbols and debug_info is not None and node_bf:
+                # Record debug symbols
+                debug_info.symbols.append(CrimscriptDebugSymbol(start_pos_bf=bf_position, start_pos_cms=cms_node.metadata.pos))
+
+            bf_code += node_bf
+            bf_position += len(node_bf)
+
+        return (bf_code, debug_info)
 
 # Functions for compiling Crimscript AST nodes into BF
 

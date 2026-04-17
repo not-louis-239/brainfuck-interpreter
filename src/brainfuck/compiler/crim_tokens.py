@@ -3,8 +3,6 @@
 from enum import StrEnum
 from dataclasses import dataclass
 
-from brainfuck.compiler.get_line_and_col import get_line_and_col
-
 class CrimTokenType(StrEnum):
     # With the exception of literals, these MUST match the
     # keywords in-code.
