@@ -14,5 +14,5 @@ class CrimscriptDriver:
         self.optimiser = Optimiser()
         self.emitter = Emitter()
 
-    def compile_crimscript(self, src_code: str) -> str:
+    def compile_crimscript(self, src_code: list[str]) -> str:
         ...

@@ -53,18 +53,26 @@ class TokenMetadata:
 class Token:
     def __init__(
             self, typ: CrimTokenType, val: str | int | None,
-            metadata: TokenMetadata
+            metadata: TokenMetadata | None = None
         ) -> None:
         self.typ = typ
         self.val = val
         self.metadata = metadata
 
     def __repr__(self):
+        if self.metadata is not None:
+            return (
+                "Token("
+                f"type={self.typ}, "
+                f"value={self.val}, "
+                f"contents={self.metadata.contents}, "
+                f"loc={self.metadata.loc[0] + 1}:{self.metadata.loc[1] + 1}"
+                ")"
+            )
         return (
             "Token("
-            f"type={self.typ},"
-            f"value={self.val},"
-            f"contents={self.metadata.contents},"
-            f"loc={self.metadata.loc[0] + 1}:{self.metadata.loc[1] + 1}"
+            f"type={self.typ}, "
+            f"value={self.val}, "
+            f"<no metadata>"
             ")"
         )
