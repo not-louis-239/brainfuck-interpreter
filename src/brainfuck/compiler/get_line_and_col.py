@@ -5,6 +5,9 @@ def get_line_and_col(src_code: list[str], pos: int) -> tuple[int, int]:
         line_len = len(line_content)
 
         # include newline that was removed by splitlines()
+        # splitlines() makes sure that source code buffers
+        # are stored as lists like ['line1', 'line2', etc.]
+        # without the newlines
         total_len = line_len + 1  # for '\n'
 
         if current_pos <= pos < current_pos + total_len:

@@ -89,6 +89,8 @@ class Lexer:
         Each line of code is processed to identify valid commands and their arguments.
         """
         tokens = []
+
+        # Need flattened code string for tokenisation
         full_code = "\n".join(src_code)
 
         pos = 0
@@ -96,7 +98,6 @@ class Lexer:
 
         while pos < full_code_len:
             matched = False
-            line_num, col_num = get_line_and_col(src_code, pos)
 
             for pattern, token_func in LEXER_PATTERNS:
                 match = pattern.match(full_code, pos)

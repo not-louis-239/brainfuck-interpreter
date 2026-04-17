@@ -12,7 +12,11 @@ ERROR_NAMES: dict[type[BrainfuckException], str] = {
 def format_bf_traceback(exc: BrainfuckException) -> str:
     line, col = get_line_and_col(exc.src_code, exc.position)
     src_line = exc.src_code[line - 1] if line - 1 < len(exc.src_code) else ""
-    src_line = src_line.rstrip("\n")
+
+    assert src_line.endswith("\n"), (
+        f"Line should not end with newline character. Source code buffers are stored without trailing newlines.\n"
+        "Please use .splitlines() to ensure source code is stored as ['line 1', 'line 2', ...], not ['line 1\\n', 'line 2\\n', ...]"
+    )
 
     # trim line length
     if len(src_line) > 100:
