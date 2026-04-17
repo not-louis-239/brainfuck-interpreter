@@ -3,6 +3,8 @@
 from enum import StrEnum
 from dataclasses import dataclass
 
+from brainfuck.compiler.get_line_and_col import get_line_and_col
+
 class CrimTokenType(StrEnum):
     # With the exception of literals, these MUST match the
     # keywords in-code.
@@ -76,22 +78,3 @@ class Token:
             ")"
         )
 
-def get_line_and_col(src_code: list[str], pos: int) -> tuple[int, int]:
-    """Translates a flat integer position into (line, col) using
-    a list of source code lines (COMMENTS INCLUDED!)."""
-
-    # Performance shouldn't matter too much here as it is only used
-    # once to format errors.
-
-    current_pos = 0
-    for line_num, line_content in enumerate(src_code):
-        line_len = len(line_content)
-        # Check if the position falls within this line
-        if current_pos <= pos < current_pos + line_len:
-            col = pos - current_pos
-            return line_num + 1, col + 1
-
-        current_pos += line_len
-
-    # Fallback for EOF or empty files
-    return len(src_code), 1

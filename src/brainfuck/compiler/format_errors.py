@@ -1,5 +1,5 @@
 from ..utils.format_tools import COL_RESET, COL_ERR, COL_ERR_HIGHLIGHT, COL_WARN, COL_WARN_HIGHLIGHT
-from .crim_tokens import get_line_and_col
+from .get_line_and_col import get_line_and_col
 from .exceptions import (
     CompilerException,
     CompilerWarning,

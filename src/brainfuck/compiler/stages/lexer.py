@@ -3,7 +3,7 @@ from typing import Callable, TypeAlias
 
 from ..crim_tokens import Token, TokenMetadata, CrimTokenType
 from ..exceptions import CompilerSyntaxError
-from ..crim_tokens import get_line_and_col
+from ..get_line_and_col import get_line_and_col
 
 def unescape_string(s: str) -> str:
     """Unescape escape sequences in a string literal (including the surrounding quotes)."""
