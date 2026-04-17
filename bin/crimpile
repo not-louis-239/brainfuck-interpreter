@@ -16,6 +16,7 @@ class Args:
     input_path: str
     output_path: str | None = None
     danger_allow_clobber: bool = False
+    debug_symbols: bool = False
 
 def fatal_err(message: str) -> NoReturn:
     print(f"{Path(__file__).name}: fatal: {message}", file=sys.stderr)
@@ -32,11 +33,20 @@ def parse_args() -> Args:
         sys.exit(0)
 
     danger_allow_clobber = False
+    debug_symbols_enabled = False
 
+    # Check for --allow-clobber flag and remove it from args if present
     if "--allow-clobber" in args:
         print("WARNING: --allow-clobber is enabled. This will overwrite the output file if it exists.")
         danger_allow_clobber = True
         args = [a for a in args if a != "--allow-clobber"]
+
+    # Check for --debug flag and remove it from args if present
+    debug_args = ("--debug", "-d")
+    if any(d in args for d in debug_args):
+        print("--debug flag enabled. The compiler will add debug symbols to the output Brainfuck code.")
+        debug_symbols_enabled = True
+        args = [a for a in args if a not in debug_args]
 
     if len(args) not in (1, 2):
         fatal_err("invalid number of arguments. run with -h for usage information")
@@ -64,7 +74,8 @@ def parse_args() -> Args:
     return Args(
         input_path=input_path,
         output_path=output_path,
-        danger_allow_clobber=danger_allow_clobber
+        danger_allow_clobber=danger_allow_clobber,
+        debug_symbols=debug_symbols_enabled
     )
 
 def main():
@@ -78,7 +89,7 @@ def main():
     try:
         with open(args.input_path, "r") as file:
             code = file.read().splitlines()
-        bf_code = compiler.compile_crimscript(code)
+        bf_code = compiler.compile_crimscript(code, debug_symbols=args.debug_symbols)
         if args.output_path:
             with open(args.output_path, "w") as file:
                 file.write(bf_code)
