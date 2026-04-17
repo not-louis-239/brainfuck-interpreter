@@ -77,7 +77,7 @@ def main():
 
     try:
         with open(args.input_path, "r") as file:
-            code = file.readlines()
+            code = file.read().splitlines()
         bf_code = compiler.compile_crimscript(code)
         if args.output_path:
             with open(args.output_path, "w") as file:

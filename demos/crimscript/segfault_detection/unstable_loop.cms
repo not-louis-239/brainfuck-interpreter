@@ -1,0 +1,5 @@
+// Unsafe: loop body has non-zero net pointer displacement.
+
+until 0 {
+    >
+}

@@ -74,7 +74,7 @@ def main():
     # Attempt to parse the file and handle compile-time exceptions
     try:
         with open(args.path, 'r', encoding="utf-8") as f:
-            src_code = f.readlines()
+            src_code = f.read().splitlines()
         validate_brainfuck(src_code)
     except IsADirectoryError:
         fatal_err(f"'{args.path}' is a directory")
