@@ -22,6 +22,13 @@ class CompilerWarning(Warning):
         self.pos = pos
         self.code = code
 
+class CompilerInternalError(Exception):
+    """Base class for internal errors in the compiler.
+    These are for "it's the compiler's fault",
+    and do not inherit from CompilerException
+    as they are not meant to be caught by `except CompilerException` blocks."""
+    pass
+
 class CompilerSyntaxError(CompilerException):
     """Raised when there is an error in the syntax of the Crimscript code."""
     pass

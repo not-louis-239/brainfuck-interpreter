@@ -15,4 +15,11 @@ class CrimscriptDriver:
         self.emitter = Emitter()
 
     def compile_crimscript(self, src_code: list[str]) -> str:
-        ...
+        """Accepts a list of lines of Crimscript code and
+        outputs the compiled Brainfuck code as a single string."""
+        tokens = self.lexer.tokenise(src_code)
+        ast = self.parser.parse(tokens)
+        self.validator.validate(ast)
+        compiled_code = self.emitter.emit(ast)
+        optimised_code = self.optimiser.optimise(compiled_code)
+        return optimised_code

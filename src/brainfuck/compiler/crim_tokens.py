@@ -43,11 +43,9 @@ class CrimTokenType(StrEnum):
 
 @dataclass
 class TokenMetadata:
-    """
-    contents   the string literal from which the token originated, e.g. "("
-    loc        the (lineno, column) of the token start in the source code
-    """
-    contents: str
+    """Stores the location of the token in the source code.
+    This is abstracted out into a separate class in case more
+    metadata needs to be added in the future."""
     loc: tuple[int, int]
 
 class Token:
@@ -55,6 +53,8 @@ class Token:
             self, typ: CrimTokenType, val: str | int | None,
             metadata: TokenMetadata | None = None
         ) -> None:
+        # Using TokenMetadata | None allows for lazy initialisation
+        # and then assigning metadata.
         self.typ = typ
         self.val = val
         self.metadata = metadata
@@ -65,7 +65,6 @@ class Token:
                 "Token("
                 f"type={self.typ}, "
                 f"value={self.val}, "
-                f"contents={self.metadata.contents}, "
                 f"loc={self.metadata.loc[0] + 1}:{self.metadata.loc[1] + 1}"
                 ")"
             )
@@ -73,6 +72,6 @@ class Token:
             "Token("
             f"type={self.typ}, "
             f"value={self.val}, "
-            f"<no metadata>"
+            f"<location unavailable>"
             ")"
         )

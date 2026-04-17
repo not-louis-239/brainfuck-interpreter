@@ -50,7 +50,7 @@ class Lexer:
             return chr(int(match.group(1), 16))
         return re.sub(r'\\x([0-9a-fA-F]{2})', replace_hex, content)
 
-    def tokenise(self, code: list[str]) -> list[str]:
+    def tokenise(self, code: list[str]) -> list[Token]:
         """
         Tokenises the input Crimscript code into a list of Tokens.
         Each line of code is processed to identify valid commands and their arguments.

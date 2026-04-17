@@ -7,5 +7,5 @@ from . import emitter
 Lexer = lexer.Lexer
 Parser = parser.Parser
 Validator = validator.Validator
-Optimiser = optimiser.Optimiser
 Emitter = emitter.Emitter
+Optimiser = optimiser.Optimiser
