@@ -10,11 +10,12 @@ sys.path.insert(0, str(Path(__file__).parents[1] / "src"))
 from brainfuck.compiler.compile_crimscript import CrimscriptDriver
 from brainfuck.compiler.exceptions import CompilerException
 from brainfuck.compiler.format_errors import format_err
+from brainfuck.cmdb.data_manager import save_debug
 
 @dataclass
 class Args:
     input_path: str
-    output_path: str | None = None
+    output_path: str
     danger_allow_clobber: bool = False
     debug_symbols: bool = False
 
@@ -49,28 +50,24 @@ def parse_args() -> Args:
         debug_symbols_enabled = True
         args = [a for a in args if a not in DEBUG_ARGS]
 
-    if len(args) not in (1, 2):
+    if len(args) != 2:
         fatal_err("invalid number of arguments. run with -h for usage information")
 
     input_path = args[0]
-
     if not Path(input_path).exists():
         fatal_err(f"cannot read from input: no such file: {input_path}")
     if not Path(input_path).is_file():
         fatal_err(f"invalid file: {input_path}")
 
-    output_path = None
-    if len(args) == 2:
-        output_path = args[1]
-
-        if Path(output_path).exists():
-            if danger_allow_clobber:
-                print(f"WARNING: Overwriting existing file '{output_path}'")
-            else:
-                fatal_err(
-                    f"output file '{output_path}' already exists. "
-                    f"(run with --allow-clobber to overwrite)"
-                )
+    output_path = args[1]
+    if Path(output_path).exists():
+        if danger_allow_clobber:
+            print(f"WARNING: Overwriting existing file '{output_path}'")
+        else:
+            fatal_err(
+                f"output file '{output_path}' already exists. "
+                f"(run with --allow-clobber to overwrite)"
+            )
 
     return Args(
         input_path=input_path,
@@ -90,12 +87,12 @@ def main():
     try:
         with open(args.input_path, "r") as file:
             code = file.read().splitlines()
-        bf_code = compiler.compile_crimscript(code, debug_symbols=args.debug_symbols)
-        if args.output_path:
-            with open(args.output_path, "w") as file:
-                file.write(bf_code)
-        else:
-            print(bf_code)
+        compiler_output = compiler.compile_crimscript(code, debug_symbols=args.debug_symbols)
+
+        with open(args.output_path, "w") as file:
+            file.write(compiler_output.bf_code)
+        if compiler_output.debug is not None:
+            save_debug(debug=compiler_output.debug, bf_path=Path(args.output_path))
     except IsADirectoryError:
         fatal_err(f"'{args.input_path}' is a directory")
     except FileNotFoundError:

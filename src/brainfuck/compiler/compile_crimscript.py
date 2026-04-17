@@ -11,7 +11,7 @@ from .debug_info import DebugInfo
 
 @dataclass
 class CompilerOutput:
-    code: str
+    bf_code: str
     debug: DebugInfo | None = None
 
 class CrimscriptDriver:
