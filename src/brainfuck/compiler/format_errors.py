@@ -29,7 +29,7 @@ def format_err(err: CompilerException) -> str:
     line, col = get_line_and_col(err.code, err.pos)
 
     return (
-        f"brainfuck: {COL_ERR_HIGHLIGHT}{err_name}{COL_RESET}: {COL_ERR}{err.msg}{COL_RESET}\n"
+        f"crimpile: {COL_ERR_HIGHLIGHT}{err_name}{COL_RESET}: {COL_ERR}{err.msg}{COL_RESET}\n"
         f"  at line {line}, column {col}\n"
         f"  (at instruction {err.pos})\n\n"
         f"{COL_ERR_HIGHLIGHT}{err.code[line - 1]}{COL_RESET}\n"
@@ -40,7 +40,7 @@ def format_warn(warn: CompilerWarning) -> str:
     warn_name = ERR_NAMES.get(type(warn), "warning")
     line, col = get_line_and_col(warn.code, warn.pos)
     return (
-        f"brainfuck: {COL_WARN_HIGHLIGHT}{warn_name}{COL_RESET}: {COL_WARN}{warn.msg}{COL_RESET}\n"
+        f"crimpile: {COL_WARN_HIGHLIGHT}{warn_name}{COL_RESET}: {COL_WARN}{warn.msg}{COL_RESET}\n"
         f"  at line {line}, column {col}\n"
         f"  (at instruction {warn.pos})\n\n"
         f"{COL_WARN_HIGHLIGHT}{warn.code[line - 1]}{COL_RESET}\n"
