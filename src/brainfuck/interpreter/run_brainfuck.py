@@ -36,9 +36,10 @@ def validate_brainfuck(src_code: list[str]) -> None:
 # this is used for error reporting in KeyboardInterrupt
 # scenarios where somehow it doesn't get caught
 # by run_brainfuck's try-except for some reason??
+# Note to self: DO NOT USE THIS VARIABLE, OK?!
 _ist = 0
 
-def run_brainfuck(src_code: list[str], *, memsize: int, wrap: bool = False):
+def run_brainfuck(src_code: list[str], *, memsize: int = 30_000, wrap: bool = False):
     ist = 0
     ptr = 0
     mem: list[int] = [0] * memsize

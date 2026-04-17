@@ -39,6 +39,13 @@ class CompilerSemanticError(CompilerException):
     behaviour or crashes at runtime."""
     pass
 
+class CompilerSemanticWarning(CompilerWarning):
+    """Raised for semantic warnings.
+    This is when the syntax is correct and will not cause crashes,
+    but may cause unintended behaviour, segmentation faults
+    or is considered bad practice."""
+    pass
+
 class CompilerTypeError(CompilerSemanticError):
     """Raised when passing an incorrect type in Crimscript code.
 
@@ -52,16 +59,16 @@ class CompilerValueError(CompilerSemanticError):
     or passing non-ASCII characters into `print()`."""
     pass
 
-class CompilerPtrError(CompilerSemanticError):
+class CompilerPtrWarning(CompilerSemanticWarning):
     """Base class for all pointer errors."""
     pass
 
-class CompilerPtrOutOfBoundsError(CompilerPtrError):
+class CompilerPtrOutOfBoundsWarning(CompilerPtrWarning):
     """Raised when the compiler detects a pattern that would push
     the pointer out of bounds and cause a segmentation fault."""
     pass
 
-class CompilerPtrStabilityError(CompilerPtrError):
+class CompilerPtrStabilityWarning(CompilerPtrWarning):
     """Raised when the compiler detects indeterminate pointer movement,
     which may cause a segmentation fault.
 

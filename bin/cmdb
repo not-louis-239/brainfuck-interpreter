@@ -1,7 +1,94 @@
 #!/usr/bin/env python3
 
+import sys
+from pathlib import Path
+from dataclasses import dataclass
+
+sys.path.insert(0, str(Path(__file__).parents[1] / "src"))
+
+from brainfuck.cmdb.data_manager import load_debug
+from brainfuck.compiler.get_line_and_col import get_line_and_col
+from brainfuck.interpreter.run_brainfuck import run_brainfuck
+from brainfuck.interpreter.exceptions import BrainfuckException
+from brainfuck.interpreter.format_traceback import format_bf_traceback
+from brainfuck.utils.format_tools import COL_BOLD, COL_ERR, COL_ERR_HIGHLIGHT, COL_RESET
+
+def fatal_err(msg: str) -> None:
+    print(f"{Path(__file__).name}: fatal: {msg}")
+    sys.exit(1)
+
+@dataclass
+class Args:
+    bf_path: Path
+    debug_path: Path
+
+def parse_args() -> Args:
+    args_raw = sys.argv[1:]
+
+    if not args_raw:
+        fatal_err("missing arguments. run with -h or --help for usage information")
+    if "-h" in args_raw or "--help" in args_raw:
+        print(f"usage: {Path(__file__).name} bf_path [-d debug_path]")
+        sys.exit(0)
+
+    # Parse positional and optional args
+    exec_path = args_raw[0]
+    debug_path = None
+
+    if len(args_raw) > 1:
+        if args_raw[1] != "-d":
+            fatal_err(f"unknown argument: {args_raw[1]}")
+        if len(args_raw) < 3:
+            fatal_err("missing debug path after -d")
+        debug_path = args_raw[2]
+
+    # Validate exec file
+    exec_file = Path(exec_path)
+    if not exec_file.exists():
+        fatal_err(f"no such file: {exec_path}")
+    if not exec_file.is_file():
+        fatal_err(f"invalid file: {exec_path}")
+
+    # --- resolve debug path ---
+    if debug_path is None:
+        debug_file = exec_file.with_suffix(exec_file.suffix + ".debug.json")
+        print(f"debug path not provided. assuming debug file is '{debug_file}'")
+    else:
+        debug_file = Path(debug_path)
+        if not debug_file.exists():
+            fatal_err(f"specified debug path doesn't exist: {debug_path}")
+        if not debug_file.is_file():
+            fatal_err(f"invalid debug file: {debug_path}")
+
+    return Args(
+        bf_path=exec_file,
+        debug_path=debug_file,
+    )
+
 def main() -> None:
-    pass
+    args = parse_args()
+    debug_info = load_debug(args.debug_path)
+
+    with open(args.bf_path, "r") as f:
+        bf_code = f.read().splitlines()
+
+    try:
+        run_brainfuck(src_code=bf_code)
+    except BrainfuckException as e:
+        # Print the standard traceback
+        print(format_bf_traceback(e))
+
+        # Now print the Crimscript trace
+        print("\nCrimscript trace:")
+
+        bf_ip = e.position
+        cms_ip = debug_info.get_crim_instruction(bf_ip)
+        line, col = get_line_and_col(debug_info.src_code, cms_ip)
+        print(f"{COL_BOLD}at {args.debug_path}:{line}:{col}{COL_RESET}")
+        print(f"{COL_ERR_HIGHLIGHT}{debug_info.src_code[line-1]}{COL_RESET}")
+        print(f"{COL_ERR}^{' ' * (col-1)}{COL_RESET}")
+
+        sys.exit(1)
 
 if __name__ == "__main__":
     main()

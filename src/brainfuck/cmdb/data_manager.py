@@ -4,8 +4,8 @@ from pathlib import Path
 from ..compiler.debug_info import DebugInfo, CrimscriptDebugSymbol
 
 
-def load_debug(db_path: Path) -> DebugInfo:
-    with open(db_path, "r") as f:
+def load_debug(debug_path: Path) -> DebugInfo:
+    with open(debug_path, "r") as f:
         raw_data = json.load(f)
 
     src_code = raw_data.get("src_code", [])
