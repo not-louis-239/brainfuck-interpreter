@@ -2,6 +2,7 @@ from dataclasses import dataclass
 
 from ..exceptions import (
     CompilerInternalError,
+    CompilerValueError,
     CompilerPtrStabilityError,
     CompilerPtrOutOfBoundsError
 )
@@ -17,6 +18,9 @@ class PtrSummary:
 
 MEMORY_LIMIT_LEFT = 0
 MEMORY_LIMIT_RIGHT = 30_000
+
+def char_is_invalid(c: str) -> bool:
+    return ord(c) > 255
 
 class Validator:
     """Validates a Crimscript AST to catch errors such as potential
@@ -85,28 +89,6 @@ class Validator:
                     f"Validator cannot analyse pointer deltas for node type {type(node).__name__}"
                 )
 
-    def _find_bounds_violation_pos(self, ast: AbstractSyntaxTree, s_cur: int = 0) -> int:
-        """Return the position of the first node that pushes the simulated pointer out of bounds."""
-
-        for node in ast:
-            child = self._walk_node_ptr_deltas(node)
-
-            if s_cur + child.s_min < MEMORY_LIMIT_LEFT:
-                if isinstance(node, nodes.UntilStmt):
-                    return self._find_bounds_violation_pos(node.body, s_cur=s_cur)
-                assert node.metadata is not None
-                return node.metadata.pos
-
-            if s_cur + child.s_max >= MEMORY_LIMIT_RIGHT:
-                if isinstance(node, nodes.UntilStmt):
-                    return self._find_bounds_violation_pos(node.body, s_cur=s_cur)
-                assert node.metadata is not None
-                return node.metadata.pos
-
-            s_cur += child.s_net
-
-        return 0
-
     def _walk_ptr_deltas(self, ast: AbstractSyntaxTree) -> PtrSummary:
         """Walks through an AST and collects all pointer deltas."""
         s_cur = 0
@@ -132,6 +114,28 @@ class Validator:
             s_max=s_max,
         )
 
+    def _find_bounds_violation_pos(self, ast: AbstractSyntaxTree, s_cur: int = 0) -> int:
+        """Return the position of the first node that pushes the simulated pointer out of bounds."""
+
+        for node in ast:
+            child = self._walk_node_ptr_deltas(node)
+
+            if s_cur + child.s_min < MEMORY_LIMIT_LEFT:
+                if isinstance(node, nodes.UntilStmt):
+                    return self._find_bounds_violation_pos(node.body, s_cur=s_cur)
+                assert node.metadata is not None
+                return node.metadata.pos
+
+            if s_cur + child.s_max >= MEMORY_LIMIT_RIGHT:
+                if isinstance(node, nodes.UntilStmt):
+                    return self._find_bounds_violation_pos(node.body, s_cur=s_cur)
+                assert node.metadata is not None
+                return node.metadata.pos
+
+            s_cur += child.s_net
+
+        return 0
+
     def _check_ptr_deltas(self, ast: AbstractSyntaxTree) -> None:
         """Checks pointer deltas for potential segmentation faults caused
         by an out-of-bounds pointer. Throws errors if it finds a liability."""
@@ -153,7 +157,112 @@ class Validator:
                 src_code=self.src_code
             )
 
-    # No need to check types and vals as those are already checked by the parser
+    def _check_types_and_vals(self, ast: AbstractSyntaxTree) -> None:
+        """Checks that all types and values in the AST are valid. Throws errors if it finds an invalid type or value."""
+
+        # Only check types and values for nodes that the parser can't check.
+        # The parser can usually check types using isinstance() or >/==/<,
+        # but can't differentiate between say, mv where the src cell is
+        # inside the casting range, which would explode at runtime.
+
+        for node in ast:
+            match node:
+                # Check move statements and copy statements so that:
+                # - src is not inside the dest range
+                # - src isn't used as the tmp cell (for copy statements)
+                # - tmp is not inside the dest range (for copy statements)
+                # Any of these would break the program at runtime.
+                case nodes.CopyStmt(delta_ptr_min=delta_ptr_min, delta_ptr_max=delta_ptr_max, delta_ptr_tmp=delta_ptr_tmp):
+                    # src can't be used as the tmp cell
+                    if delta_ptr_tmp == 0:
+                        assert node.metadata is not None
+                        raise CompilerValueError(
+                            f"Invalid CopyStmt: src cell cannot be used as the tmp cell",
+                            pos=node.metadata.pos,
+                            src_code=self.src_code
+                        )
+
+                    # src can't be inside dest range
+                    if delta_ptr_min <= 0 <= delta_ptr_max:
+                        assert node.metadata is not None
+                        raise CompilerValueError(
+                            f"Invalid CopyStmt: src cell cannot be inside the destination range",
+                            pos=node.metadata.pos,
+                            src_code=self.src_code
+                        )
+
+                    # tmp can't be inside dest range
+                    if delta_ptr_min <= delta_ptr_tmp <= delta_ptr_max:
+                        assert node.metadata is not None
+                        raise CompilerValueError(
+                            f"Invalid CopyStmt: tmp cell cannot be inside the destination range",
+                            pos=node.metadata.pos,
+                            src_code=self.src_code
+                        )
+
+                case nodes.MoveStmt(delta_ptr_min=delta_ptr_min, delta_ptr_max=delta_ptr_max):
+                    # src can't be inside the dest range
+                    if delta_ptr_min <= 0 <= delta_ptr_max:
+                        assert node.metadata is not None
+                        raise CompilerValueError(
+                            f"Invalid MoveStmt: src cell cannot be inside the destination range",
+                            pos=node.metadata.pos,
+                            src_code=self.src_code
+                        )
+
+                    # No checks for tmp as MoveStmt doesn't have a tmp cell;
+                    # as it destroys the src cell.
+
+                # Recursively check until statements for type and value errors.
+                case nodes.UntilStmt(target=target):
+                    if not 0 <= target <= 255:
+                        assert node.metadata is not None
+                        raise CompilerValueError(
+                            f"Invalid target value for UntilStmt: {target} (must be between 0 and 255 inclusive)",
+                            pos=node.metadata.pos,
+                            src_code=self.src_code
+                        )
+
+                    # Recursively check the body of the UntilStmt for type and value errors.
+                    # If the user uses 1,000 loops, this would raise a RecursionError,
+                    # but I don't expect anyone to go that far.
+
+                    # If they do, they deserve the RecursionError.
+                    # Who the f*ck needs 1,000 loops in Brainfuck anyway?
+
+                    self._check_types_and_vals(node.body)
+
+                case nodes.SetStmt(value=value):
+                    if not 0 <= value <= 255:
+                        assert node.metadata is not None
+                        raise CompilerValueError(
+                            f"Invalid value for SetStmt: {value} (must be between 0 and 255 inclusive)",
+                            pos=node.metadata.pos,
+                            src_code=self.src_code
+                        )
+
+                # Print and input statements cannot contain non-ASCII characters
+                case nodes.PrintStmt(text=text):
+                    if text is not None and any(char_is_invalid(c) for c in text):
+                        assert node.metadata is not None
+                        raise CompilerValueError(
+                            f"Invalid text for PrintStmt: cannot print characters where ord(character) > 255",
+                            pos=node.metadata.pos,
+                            src_code=self.src_code
+                        )
+
+                case nodes.InputStmt(prompt=prompt):
+                    if prompt is not None and any(char_is_invalid(c) for c in prompt):
+                        assert node.metadata is not None
+                        raise CompilerValueError(
+                            f"Invalid prompt for InputStmt: cannot contain characters where ord(character) > 255",
+                            pos=node.metadata.pos,
+                            src_code=self.src_code
+                        )
+
+                # Nodes that don't have values to validate
+                case _:
+                    pass
 
     def validate(self, ast: AbstractSyntaxTree, src_code: list[str]) -> None:
         """Validates the AST (WITHOUT MODIFYING IT).
@@ -163,5 +272,6 @@ class Validator:
 
         for check in (
             self._check_ptr_deltas,
+            self._check_types_and_vals
         ):
             check(ast)
