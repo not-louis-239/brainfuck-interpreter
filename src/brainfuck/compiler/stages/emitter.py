@@ -2,7 +2,7 @@ from typing import Callable, TypeVar
 
 from ..ast import nodes
 from ..ast.nodes import AbstractSyntaxTree, ASTNode
-from ..exceptions import CompilerSyntaxError
+from ..exceptions import CompilerSyntaxError, CompilerInternalError
 
 N = TypeVar("N", bound=ASTNode)
 _EmitCallable = Callable[["Emitter", N], str]
@@ -24,18 +24,14 @@ class Emitter:
         pass
 
     def compile_stmt(self, node: ASTNode) -> str:
-        return self.EMIT_REGISTRY[type(node)](self, node)
+        try:
+            return self.EMIT_REGISTRY[type(node)](self, node)
+        except KeyError:
+            raise CompilerInternalError(f"No emit function registered for type {type(node).__name__}", node.metadata.pos)
 
     def emit(self, ast: AbstractSyntaxTree, src_code: list[str]) -> str:
-        self.src_code = src_code
-
-        bf_code = ""
-        for node in ast:
-            try:
-                bf_code += self.compile_stmt(node)
-            except KeyError:
-                raise CompilerSyntaxError(f"Unknown statement type: {type(node).__name__}", node.metadata.pos, self.src_code)
-        return bf_code
+        self.src_code = src_code  # required for error reporting
+        return "".join([self.compile_stmt(stmt) for stmt in ast])
 
 # Functions for compiling Crimscript AST nodes into BF
 

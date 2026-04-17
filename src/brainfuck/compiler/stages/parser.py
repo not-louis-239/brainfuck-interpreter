@@ -29,7 +29,7 @@ class Parser:
     def peek(self) -> Token:
         """Return the current token without consuming ("eating") it."""
         if self.eof():
-            raise CompilerInternalError("Unexpected EOF in input")
+            raise CompilerSyntaxError("Unexpected EOF in input", pos=-1, src_code=self.src_code)
         return self.tokens[self.token_pos]
 
     def advance(self) -> Token:
@@ -104,7 +104,7 @@ class Parser:
 
         self.tokens = tokens
         self.token_pos: int = 0
-        self.src_code = src_code
+        self.src_code: list[str] = src_code
         ast: AbstractSyntaxTree = []
 
         while not self.eof():
