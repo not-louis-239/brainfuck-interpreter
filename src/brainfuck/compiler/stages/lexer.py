@@ -1,6 +1,7 @@
 import re
 from ..crim_tokens import Token, TokenMetadata, CrimTokenType
 from ..exceptions import CompilerSyntaxError
+from ...utils.line_and_col import get_line_and_col
 
 class Lexer:
     """Converts Crimscript source code into Crimscript tokens.
@@ -61,7 +62,6 @@ class Lexer:
 
         # Join all lines into a single string for tokenization
         full_code = '\n'.join(processed_code)
-        full_code_lines = full_code.split('\n')
 
         # Define regex patterns for different token types
         # Order matters: patterns near the top are applied first
@@ -114,8 +114,7 @@ class Lexer:
         pos = 0
         while pos < len(full_code):
             matched = False
-            line_num = len(full_code_lines)
-            col_num = len(full_code_lines[-1]) + 1
+            line_num, col_num = get_line_and_col(full_code, pos)
 
             for pattern, token_func in patterns:
                 if pattern == r'/\*.*?\*/':  # Multi-line comment needs DOTALL flag
@@ -129,7 +128,10 @@ class Lexer:
                         new_token = token_func(match)
 
                         # Set token metadata
-                        new_token.metadata = TokenMetadata(contents=match.group(0), loc=(line_num, col_num))
+                        new_token.metadata = TokenMetadata(
+                            contents=match.group(0),
+                            loc=(line_num - 1, col_num - 1)
+                        )
 
                         tokens.append(new_token)
                     pos = match.end()
