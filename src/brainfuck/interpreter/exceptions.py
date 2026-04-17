@@ -1,9 +1,9 @@
 class BrainfuckException(Exception):
-    def __init__(self, message: str, position: int, code: str):
+    def __init__(self, message: str, position: int, src_code: list[str]) -> None:
         super().__init__(message)
         self.message = message
         self.position = position
-        self.code = code
+        self.src_code = src_code
 
 class BFSyntaxError(BrainfuckException):
     """Exception raised for Brainfuck syntax errors."""

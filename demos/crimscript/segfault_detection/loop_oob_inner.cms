@@ -1,0 +1,7 @@
+// Unsafe: loop body is pointer-stable overall, but temporarily walks
+// out of bounds before coming back.
+
+until 0 {
+    <
+    >
+}

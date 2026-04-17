@@ -1,4 +1,9 @@
+"""Module for generic Crimscript token types."""
+
 from enum import StrEnum
+from dataclasses import dataclass
+
+from brainfuck.compiler.get_line_and_col import get_line_and_col
 
 class CrimTokenType(StrEnum):
     # With the exception of literals, these MUST match the
@@ -14,8 +19,8 @@ class CrimTokenType(StrEnum):
     PRINT = 'print'
     INPUT = 'input'
     UNTIL = 'until'
-    SET = 'set'
     CLEAR = 'clear'
+    SET = 'set'
     MOVE = 'mv'   # move
     COPY = 'cp'   # copy
 
@@ -38,10 +43,38 @@ class CrimTokenType(StrEnum):
     STRING = 'STRING'
     IDENTIFIER = 'IDENTIFIER'
 
+@dataclass
+class TokenMetadata:
+    """Stores the location of the token in the source code (COMMENTS INCLUDED!).
+    This is abstracted out into a separate class in case more
+    metadata needs to be added in the future."""
+    pos: int
+
 class Token:
-    def __init__(self, typ: CrimTokenType, val: str | int | None) -> None:
+    def __init__(
+            self, typ: CrimTokenType, val: str | int | None,
+            metadata: TokenMetadata | None = None
+        ) -> None:
+        # Using TokenMetadata | None allows for lazy initialisation
+        # and then assigning metadata.
         self.typ = typ
         self.val = val
+        self.metadata = metadata
 
     def __repr__(self):
-        return f"Token(type={self.typ}, value={self.val})"
+        if self.metadata is not None:
+            return (
+                "Token("
+                f"type={self.typ}, "
+                f"value={self.val}, "
+                f"pos={self.metadata.pos}"
+                ")"
+            )
+        return (
+            "Token("
+            f"type={self.typ}, "
+            f"value={self.val}, "
+            f"<no metadata>"
+            ")"
+        )
+

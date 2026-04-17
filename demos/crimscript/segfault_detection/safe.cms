@@ -1,0 +1,5 @@
+// Safe: returns to the starting pointer and stays in bounds.
+
+>3
+<3
+print("safe\n")
