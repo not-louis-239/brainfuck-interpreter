@@ -39,6 +39,7 @@ class Validator:
                 return PtrSummary(0, 0, 0)
 
             # Pointer changes (potentially dangerous)
+            # We set s_min and s_max to min(*) and max(*) to reflect the "journey" taken by the pointer.
             case nodes.PointerChange(distance=d):
                 return PtrSummary(
                     s_net=d,
@@ -52,24 +53,18 @@ class Validator:
                 if (bad_sum := body_sum.s_net) != 0:
                     assert node.metadata is not None
                     raise CompilerPtrStabilityError(
-                        f"Potential segmentation fault detected: non-zero ptr change inside control structure: {bad_sum}",
+                        f"Potential segmentation fault detected: non-zero ptr change inside control structure (total_delta = {bad_sum})",
                         pos=node.metadata.pos,
                         src_code=self.src_code
                     )
-                return PtrSummary(
-                    s_net=0,
-                    s_min=body_sum.s_min,
-                    s_max=body_sum.s_max,
-                )
+                return body_sum
 
             # Move statements (potentially dangerous)
             case nodes.MoveStmt(delta_ptr_min=delta_ptr_min, delta_ptr_max=delta_ptr_max):
-                lower = min(0, delta_ptr_min, delta_ptr_max)
-                upper = max(0, delta_ptr_min, delta_ptr_max)
                 return PtrSummary(
-                    s_net=delta_ptr_max,
-                    s_min=lower,
-                    s_max=upper,
+                    s_net=0,
+                    s_min=min(0, delta_ptr_min, delta_ptr_max),
+                    s_max=max(0, delta_ptr_min, delta_ptr_max),
                 )
 
             # Copy statements (potentially dangerous)
@@ -78,12 +73,10 @@ class Validator:
                 delta_ptr_max=delta_ptr_max,
                 delta_ptr_tmp=delta_ptr_tmp,
             ):
-                lower = min(0, delta_ptr_min, delta_ptr_max, delta_ptr_tmp)
-                upper = max(0, delta_ptr_min, delta_ptr_max, delta_ptr_tmp)
                 return PtrSummary(
                     s_net=0,
-                    s_min=lower,
-                    s_max=upper,
+                    s_min=min(0, delta_ptr_min, delta_ptr_max, delta_ptr_tmp),
+                    s_max=max(0, delta_ptr_min, delta_ptr_max, delta_ptr_tmp),
                 )
 
             # Statements with no protocol for summarising pointer deltas
