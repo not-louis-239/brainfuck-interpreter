@@ -3,10 +3,11 @@ import sys
 from .exceptions import BFSegmentationFault, BFSyntaxError, BFInterrupt
 from .keywords import BrainfuckKeywords
 
-def validate_brainfuck(code: list[str]) -> None:
+def validate_brainfuck(src_code: list[str]) -> None:
     stack: list[int] = []
 
-    for i, ch in enumerate(code):
+    src_code_str = "\n".join(src_code)
+    for i, ch in enumerate(src_code_str):
         if ch == BrainfuckKeywords.LOOP_START:
             stack.append(i)
 
@@ -15,7 +16,7 @@ def validate_brainfuck(code: list[str]) -> None:
                 # unmatched loop end
                 raise BFSyntaxError(
                     f"unmatched '{BrainfuckKeywords.LOOP_END}'",
-                    position=i, src_code=code
+                    position=i, src_code=src_code
                 )
             stack.pop()
 
@@ -24,7 +25,7 @@ def validate_brainfuck(code: list[str]) -> None:
         i = stack[-1]
         raise BFSyntaxError(
             f"unmatched '{BrainfuckKeywords.LOOP_START}'",
-            position=i, src_code=code
+            position=i, src_code=src_code
         )
 
 # used to allow transmitting info from the function

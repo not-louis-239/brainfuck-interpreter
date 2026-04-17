@@ -22,35 +22,50 @@ def fatal_err(message: str) -> NoReturn:
     sys.exit(1)
 
 def parse_args() -> Args:
+    args = sys.argv[1:]
+
+    if not args:
+        fatal_err("missing args. run with -h or --help for usage information")
+
+    if args[0] in ("-h", "--help"):
+        print(f"usage: {sys.argv[0]} <input_path> [output_path] [--allow-clobber]")
+        sys.exit(0)
+
     danger_allow_clobber = False
 
-    if len(sys.argv) == 1:
-        fatal_err("missing args. run with -h or --help for usage information")
-    if sys.argv[1] in ("-h", "--help"):
-        print(f"Usage: {sys.argv[0]} <path_to_crimscript>")
-        sys.exit(0)
-    if ("--allow-clobber" in sys.argv):  # no shortcut as overwriting is dangerous
+    if "--allow-clobber" in args:
         print("WARNING: --allow-clobber is enabled. This will overwrite the output file if it exists.")
         danger_allow_clobber = True
+        args = [a for a in args if a != "--allow-clobber"]
 
-    if len(sys.argv) == 2:
-        input_path = sys.argv[1]
-        if not Path(input_path).is_file():
-            fatal_err(f"'{input_path}' is not a file")
-    elif len(sys.argv) == 3:
-        input_path = sys.argv[1]
-        output_path = sys.argv[2]
-        if not Path(input_path).exists():
-            fatal_err(f"no such file or directory: {input_path}")
-        if not Path(input_path).is_file():
-            fatal_err(f"'{input_path}' is not a file")
+    if len(args) not in (1, 2):
+        fatal_err("invalid number of arguments. run with -h for usage information")
+
+    input_path = args[0]
+
+    if not Path(input_path).exists():
+        fatal_err(f"cannot read from input: no such file: {input_path}")
+    if not Path(input_path).is_file():
+        fatal_err(f"invalid file: {input_path}")
+
+    output_path = None
+    if len(args) == 2:
+        output_path = args[1]
+
         if Path(output_path).exists():
             if danger_allow_clobber:
                 print(f"WARNING: Overwriting existing file '{output_path}'")
             else:
-                fatal_err(f"output file '{output_path}' already exists. (run with --allow-clobber to overwrite, this is dangerous and irreversible)")
-        return Args(input_path=input_path, output_path=output_path, danger_allow_clobber=danger_allow_clobber)
-    return Args(input_path=sys.argv[1])
+                fatal_err(
+                    f"output file '{output_path}' already exists. "
+                    f"(run with --allow-clobber to overwrite)"
+                )
+
+    return Args(
+        input_path=input_path,
+        output_path=output_path,
+        danger_allow_clobber=danger_allow_clobber
+    )
 
 def main():
     # Compile some Crimscript code in a file and output it to another file

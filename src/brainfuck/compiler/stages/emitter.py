@@ -113,8 +113,12 @@ def compile_until(self: Emitter, node: nodes.UntilStmt):
 
 @Emitter.register(nodes.MoveStmt)
 def compile_move(self: Emitter, node: nodes.MoveStmt) -> str:
-    ...
+    return ""  # TODO: rest of implementation
+    # This is a stub that returns an empty string so as not to crash
+    # the emitter
 
 @Emitter.register(nodes.CopyStmt)
 def compile_copy(self: Emitter, node: nodes.CopyStmt) -> str:
-    ...
+    return ""  # TODO: rest of implementation
+    # This is a stub that returns an empty string so as not to crash
+    # the emitter
