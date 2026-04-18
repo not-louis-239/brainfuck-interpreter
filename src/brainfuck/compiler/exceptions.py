@@ -1,6 +1,11 @@
 # not using warnings.warn() due to need for custom formatting and the fact
 # that these warnings are not meant to be ignored by default
 
+import sys
+
+from brainfuck.compiler.format_errors import format_warn
+
+
 class CompilerException(Exception):
     """Base class for compiler exceptions.
     These are fatal and will prevent forming the finished Brainfuck file.
@@ -76,3 +81,8 @@ class CompilerPtrStabilityWarning(CompilerPtrWarning):
     inside a control structure is != 0 (i.e. number of `>` and `<` are unequal)
     """
     pass
+
+def compiler_warn(msg: str, pos: int, src_code: list[str], typ: type[CompilerWarning]) -> None:
+    """Formats and prints a compiler warning to stderr without crashing the compiler."""
+    warn = typ(msg=msg, pos=pos, code=src_code)
+    print(format_warn(warn), file=sys.stderr)

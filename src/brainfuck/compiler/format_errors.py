@@ -7,9 +7,9 @@ from .exceptions import (
     CompilerSemanticError,
     CompilerTypeError,
     CompilerValueError,
-    CompilerPtrError,
-    CompilerPtrStabilityError,
-    CompilerPtrOutOfBoundsError
+    CompilerPtrWarning,
+    CompilerPtrStabilityWarning,
+    CompilerPtrOutOfBoundsWarning
 )
 
 ERR_NAMES: dict[type[CompilerException] | type[CompilerWarning], str] = {
@@ -19,9 +19,9 @@ ERR_NAMES: dict[type[CompilerException] | type[CompilerWarning], str] = {
     CompilerSemanticError: "semantic error",
     CompilerTypeError: "invalid argument type",
     CompilerValueError: "invalid argument value",
-    CompilerPtrError: "pointer error",
-    CompilerPtrStabilityError: "pointer stability error",
-    CompilerPtrOutOfBoundsError: "pointer out of bounds error"
+    CompilerPtrWarning: "pointer warning",
+    CompilerPtrStabilityWarning: "pointer stability warning",
+    CompilerPtrOutOfBoundsWarning: "pointer out of bounds warning"
 }
 
 def format_err(err: CompilerException) -> str:

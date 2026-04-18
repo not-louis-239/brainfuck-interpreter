@@ -3,8 +3,9 @@ from dataclasses import dataclass
 from ..exceptions import (
     CompilerInternalError,
     CompilerValueError,
-    CompilerPtrStabilityError,
-    CompilerPtrOutOfBoundsError
+    CompilerPtrStabilityWarning,
+    CompilerPtrOutOfBoundsWarning,
+    compiler_warn
 )
 
 from ..ast import nodes
@@ -56,10 +57,11 @@ class Validator:
                 body_sum = self._walk_ptr_deltas(body)
                 if (bad_sum := body_sum.s_net) != 0:
                     assert node.metadata is not None
-                    raise CompilerPtrStabilityError(
+                    compiler_warn(
                         f"Potential segmentation fault detected: non-zero ptr change inside control structure (total_delta = {bad_sum})",
                         pos=node.metadata.pos,
-                        src_code=self.src_code
+                        src_code=self.src_code,
+                        typ=CompilerPtrStabilityWarning
                     )
                 return body_sum
 
@@ -145,16 +147,18 @@ class Validator:
         violation_pos = self._find_bounds_violation_pos(ast)
 
         if s.s_min < MEMORY_LIMIT_LEFT:
-            raise CompilerPtrOutOfBoundsError(
+            compiler_warn(
                 "Potential segmentation fault detected: access violation to far-left of memory",
                 pos=violation_pos,
-                src_code=self.src_code
+                src_code=self.src_code,
+                typ=CompilerPtrOutOfBoundsWarning
             )
         elif s.s_max >= MEMORY_LIMIT_RIGHT:
-            raise CompilerPtrOutOfBoundsError(
+            compiler_warn(
                 "Potential segmentation fault detected: access violation to far-right of memory",
                 pos=violation_pos,
-                src_code=self.src_code
+                src_code=self.src_code,
+                typ=CompilerPtrOutOfBoundsWarning
             )
 
     def _check_types_and_vals(self, ast: AbstractSyntaxTree) -> None:
