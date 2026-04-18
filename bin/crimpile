@@ -16,6 +16,7 @@ from brainfuck.cmdb.data_manager import save_debug
 class Args:
     input_path: str
     output_path: str
+    recursion_limit: int
     danger_allow_clobber: bool = False
     debug_symbols: bool = False
 
@@ -26,6 +27,7 @@ def fatal_err(message: str) -> NoReturn:
 def parse_args() -> Args:
     DEBUG_ARGS: tuple[str, ...] = ("--debug", "-d")
     ALLOW_CLOBBER_ARGS: tuple[str, ...] = ("--allow-clobber", "-f")
+    RECURSE_ARGS: tuple[str, ...] = ("--dangerous-recurse",)
 
     args = sys.argv[1:]
 
@@ -33,17 +35,20 @@ def parse_args() -> Args:
         fatal_err("missing args. run with -h or --help for usage information")
 
     if args[0] in ("-h", "--help"):
-        print(f"usage: {sys.argv[0]} <input_path> [output_path] [-f, --allow-clobber] [{" ".join(DEBUG_ARGS)}]")
-        print(f"  input_path            path to the input Crimscript file to compile")
-        print(f"  output_path           path to write the output Brainfuck file")
-        print(f"  -f, --allow-clobber   allow overwriting the output file if it already exists")
+        print(f"usage: {sys.argv[0]} <input_path> <output_path> [-f, --allow-clobber] [{' '.join(DEBUG_ARGS)}] [--dangerous-recurse N]")
+        print(f"  input_path                 path to the input Crimscript file to compile")
+        print(f"  output_path                path to write the output Brainfuck file")
+        print(f"  -f, --allow-clobber        allow overwriting the output file if it already exists")
+        print(f"  -d, --debug                enable debug symbol generation")
+        print(f"  --dangerous-recurse N      set Python recursion limit to N (dangerous: may crash the C stack)")
         sys.exit(0)
 
     danger_allow_clobber = False
     debug_symbols_enabled = False
+    recursion_limit = 1_000
 
     # Check for --allow-clobber flag and remove it from args if present
-    if (a in args for a in ALLOW_CLOBBER_ARGS):
+    if any(a in args for a in ALLOW_CLOBBER_ARGS):
         print("WARNING: (-f, --allow-clobber) is enabled. This will overwrite the output file if it exists.")
         danger_allow_clobber = True
         args = [a for a in args if a not in ALLOW_CLOBBER_ARGS]
@@ -53,6 +58,21 @@ def parse_args() -> Args:
         print("(-d, --debug) flag enabled. The compiler will add debug symbols to the output Brainfuck code.")
         debug_symbols_enabled = True
         args = [a for a in args if a not in DEBUG_ARGS]
+
+    # Check for recursion limit flag and remove it from args if present
+    if any(r in args for r in RECURSE_ARGS):
+        recurse_idx = next(i for i, a in enumerate(args) if a in RECURSE_ARGS)
+        if recurse_idx == len(args) - 1:
+            fatal_err("missing value for --dangerous-recurse")
+        recurse_value = args[recurse_idx + 1]
+        try:
+            recursion_limit = int(recurse_value)
+        except ValueError:
+            fatal_err(f"invalid recursion limit: {recurse_value}")
+        if recursion_limit < 10:
+            fatal_err("recursion limit must be 10 or higher")
+        print(f"WARNING: --dangerous-recurse enabled. This may crash the compiler ungracefully by overflowing the C stack.")
+        args = [a for i, a in enumerate(args) if i not in (recurse_idx, recurse_idx + 1)]
 
     if len(args) != 2:
         fatal_err("invalid number of arguments. run with -h for usage information")
@@ -76,6 +96,7 @@ def parse_args() -> Args:
     return Args(
         input_path=input_path,
         output_path=output_path,
+        recursion_limit=recursion_limit,
         danger_allow_clobber=danger_allow_clobber,
         debug_symbols=debug_symbols_enabled
     )
@@ -86,6 +107,7 @@ def main():
     # If no output file is given, print the output to stdout.
 
     args = parse_args()
+    sys.setrecursionlimit(args.recursion_limit)
     compiler = CrimscriptDriver()
 
     try:
