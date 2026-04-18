@@ -1,6 +1,8 @@
 import sys
+from typing import TYPE_CHECKING
 
 from brainfuck.compiler.exceptions import CompilerWarning
+
 
 from ..utils.format_tools import COL_RESET, COL_ERR, COL_ERR_HIGHLIGHT, COL_WARN, COL_WARN_HIGHLIGHT
 from .get_line_and_col import get_line_and_col
@@ -15,6 +17,9 @@ from .exceptions import (
     CompilerPtrStabilityWarning,
     CompilerPtrOutOfBoundsWarning
 )
+
+if TYPE_CHECKING:
+    from brainfuck.compiler.stages.validator import Validator
 
 ERR_NAMES: dict[type[CompilerException] | type[CompilerWarning], str] = {
     CompilerException: "error",
@@ -51,7 +56,11 @@ def format_warn(warn: CompilerWarning) -> str:
         f"{COL_WARN_HIGHLIGHT}{' ' * (col - 1) + '^'}{COL_RESET}"
     )
 
-def compiler_warn(msg: str, pos: int, src_code: list[str], typ: type[CompilerWarning]) -> None:
+def compiler_warn(
+        msg: str, pos: int, src_code: list[str],
+        typ: type[CompilerWarning], validator: Validator
+    ) -> None:
     """Formats and prints a compiler warning to stderr without crashing the compiler."""
     warn = typ(msg=msg, pos=pos, code=src_code)
     print(format_warn(warn), file=sys.stderr)
+    validator.num_warnings_found += 1

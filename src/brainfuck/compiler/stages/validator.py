@@ -11,6 +11,7 @@ from ..exceptions import (
 
 from ..ast import nodes
 from ..ast.nodes import ASTNode, AbstractSyntaxTree
+from ...utils.format_tools import COL_OK, COL_WARN, COL_WARN_HIGHLIGHT, COL_RESET
 
 @dataclass
 class PtrSummary:
@@ -62,7 +63,8 @@ class Validator:
                         f"Potential segmentation fault detected: non-zero ptr change inside control structure (total_delta = {bad_sum})",
                         pos=node.metadata.pos,
                         src_code=self.src_code,
-                        typ=CompilerPtrStabilityWarning
+                        typ=CompilerPtrStabilityWarning,
+                        validator=self
                     )
                 return body_sum
 
@@ -152,14 +154,16 @@ class Validator:
                 "Potential segmentation fault detected: access violation to far-left of memory",
                 pos=violation_pos,
                 src_code=self.src_code,
-                typ=CompilerPtrOutOfBoundsWarning
+                typ=CompilerPtrOutOfBoundsWarning,
+                validator=self
             )
         elif s.s_max >= MEMORY_LIMIT_RIGHT:
             compiler_warn(
                 "Potential segmentation fault detected: access violation to far-right of memory",
                 pos=violation_pos,
                 src_code=self.src_code,
-                typ=CompilerPtrOutOfBoundsWarning
+                typ=CompilerPtrOutOfBoundsWarning,
+                validator=self
             )
 
     def _check_types_and_vals(self, ast: AbstractSyntaxTree) -> None:
@@ -274,9 +278,15 @@ class Validator:
         If a check breaks, throws an error.
         Requires src_code for error reporting."""
         self.src_code = src_code
+        self.num_warnings_found = 0
 
         for check in (
             self._check_ptr_deltas,
             self._check_types_and_vals
         ):
             check(ast)
+
+        if self.num_warnings_found:
+            print(f"{COL_WARN}Found {COL_WARN_HIGHLIGHT}{self.num_warnings_found}{COL_RESET}{COL_WARN} warning{"s" if self.num_warnings_found != 1 else ""}.{COL_RESET}")
+        else:
+            print(f"{COL_OK}Compiled successfully. No warnings found.{COL_RESET}")
