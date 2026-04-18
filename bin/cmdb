@@ -13,6 +13,42 @@ from brainfuck.interpreter.exceptions import BrainfuckException
 from brainfuck.interpreter.format_traceback import format_bf_traceback
 from brainfuck.utils.format_tools import COL_BOLD, COL_ERR, COL_ERR_HIGHLIGHT, COL_RESET
 
+ASCII_SPECIAL_CASES: dict[int, str] = {
+    0: "NUL",
+    1: "SOH",
+    2: "STX",
+    3: "ETX",
+    4: "EOT",
+    5: "ENQ",
+    6: "ACK",
+    7: "BEL",
+    8: "BS",
+    9: "TAB",
+    10: "LF",
+    11: "VT",
+    12: "FF",
+    13: "CR",
+    14: "SO",
+    15: "SI",
+    16: "DLE",
+    17: "DC1",
+    18: "DC2",
+    19: "DC3",
+    20: "DC4",
+    21: "NAK",
+    22: "SYN",
+    23: "ETB",
+    24: "CAN",
+    25: "EM",
+    26: "SUB",
+    27: "ESC",
+    28: "FS",
+    29: "GS",
+    30: "RS",
+    31: "US",
+    127: "DEL",
+}
+
 def fatal_err(msg: str) -> None:
     print(f"{Path(__file__).name}: fatal: {msg}")
     sys.exit(1)
@@ -87,6 +123,20 @@ def main() -> None:
         print(f"{COL_BOLD}at {args.debug_path}:{line}:{col}{COL_RESET}")
         print(f"{COL_ERR_HIGHLIGHT}{debug_info.src_code[line-1]}{COL_RESET}")
         print(f"{COL_ERR}^{' ' * (col-1)}{COL_RESET}")
+
+        # Memory trace
+        if e.mem is not None:
+            print("\nMemory trace at error:")
+            print("Addr    Dec  Hex  Chr")
+
+            # Get the max memory address whose value is != 0
+            max_ptr = max(ptr for ptr, val in enumerate(e.mem) if val != 0)
+            for ptr in range(max_ptr + 1):
+                val = e.mem[ptr]
+                chr_repr = ASCII_SPECIAL_CASES.get(val, chr(val) if 32 <= val < 127 else "?")
+                print(f"  [{ptr}]: {val:3d} {val:02X} {chr_repr}")
+        else:
+            print("\nNo memory trace available at error.")
 
         sys.exit(1)
 

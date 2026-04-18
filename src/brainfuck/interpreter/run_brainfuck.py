@@ -16,7 +16,7 @@ def validate_brainfuck(src_code: list[str]) -> None:
                 # unmatched loop end
                 raise BFSyntaxError(
                     f"unmatched '{BrainfuckKeywords.LOOP_END}'",
-                    position=i, src_code=src_code
+                    position=i, src_code=src_code, mem=None
                 )
             stack.pop()
 
@@ -25,7 +25,7 @@ def validate_brainfuck(src_code: list[str]) -> None:
         i = stack[-1]
         raise BFSyntaxError(
             f"unmatched '{BrainfuckKeywords.LOOP_START}'",
-            position=i, src_code=src_code
+            position=i, src_code=src_code, mem=None
         )
 
 # used to allow transmitting info from the function
@@ -70,7 +70,7 @@ def run_brainfuck(src_code: list[str], *, memsize: int = 30_000, wrap: bool = Fa
                     else:
                         raise BFSegmentationFault(
                             f"access violation at far-right of memory",
-                            position=ist, src_code=src_code
+                            position=ist, src_code=src_code, mem=mem
                         )
 
             elif char == BrainfuckKeywords.PTR_DEC:
@@ -81,7 +81,7 @@ def run_brainfuck(src_code: list[str], *, memsize: int = 30_000, wrap: bool = Fa
                     else:
                         raise BFSegmentationFault(
                             f"access violation at far-left of memory",
-                            position=ist, src_code=src_code
+                            position=ist, src_code=src_code, mem=mem
                         )
 
             elif char == BrainfuckKeywords.STDOUT:
@@ -105,7 +105,7 @@ def run_brainfuck(src_code: list[str], *, memsize: int = 30_000, wrap: bool = Fa
                         if ist >= prog_len:
                             raise BFSyntaxError(
                                 f"unmatched '{BrainfuckKeywords.LOOP_START}'",
-                                position=ist, src_code=src_code
+                                position=ist, src_code=src_code, mem=mem
                             )
                         if src_code_str[ist] == BrainfuckKeywords.LOOP_START:
                             depth += 1
@@ -121,7 +121,7 @@ def run_brainfuck(src_code: list[str], *, memsize: int = 30_000, wrap: bool = Fa
                         if ist < 0:
                             raise BFSyntaxError(
                                 f"unmatched '{BrainfuckKeywords.LOOP_END}'",
-                                position=ist, src_code=src_code
+                                position=ist, src_code=src_code, mem=mem
                             )
                         if src_code_str[ist] == BrainfuckKeywords.LOOP_END:
                             depth += 1
@@ -134,5 +134,5 @@ def run_brainfuck(src_code: list[str], *, memsize: int = 30_000, wrap: bool = Fa
     except KeyboardInterrupt:
         raise BFInterrupt(
             "program interrupted by user",
-            position=ist, src_code=src_code
+            position=ist, src_code=src_code, mem=mem
         )
