@@ -182,10 +182,11 @@ class Validator:
                 validator=self
             )
 
-    def _check_types_and_vals(self, ast: AbstractSyntaxTree) -> None:
-        """Checks that all types and values in the AST are valid. Throws errors if it finds an invalid type or value."""
+    def _check_vals(self, ast: AbstractSyntaxTree) -> None:
+        """Checks that all values in the AST are valid. Throws errors if it finds an invalid value.
+        Only checks values as types can be caught by the parser."""
 
-        # Only check types and values for nodes that the parser can't check.
+        # Only check values for nodes that the parser can't check.
         # The parser can usually check types using isinstance() or >/==/<,
         # but can't differentiate between say, mv where the src cell is
         # inside the casting range, which would explode at runtime.
@@ -256,7 +257,7 @@ class Validator:
                     # Who the f*ck needs 1,000 loops in Brainfuck anyway?
 
                     try:
-                        self._check_types_and_vals(node.body)
+                        self._check_vals(node.body)
                     except RecursionError as e:
                         raise CompilerDepthError(
                             "Validator exceeded maximum recursion depth while checking types and values. This likely means that the control structure is too deeply nested.",
@@ -305,7 +306,7 @@ class Validator:
 
         for check in (
             self._check_ptr_deltas,
-            self._check_types_and_vals
+            self._check_vals
         ):
             check(ast)
 

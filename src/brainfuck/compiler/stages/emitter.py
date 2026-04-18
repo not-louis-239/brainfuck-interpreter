@@ -125,7 +125,10 @@ def compile_clear(self: Emitter, node: nodes.ClearStmt, debug_info: DebugInfo | 
 @Emitter.register(nodes.SetStmt)
 def compile_set(self: Emitter, node: nodes.SetStmt, debug_info: DebugInfo | None, bf_pos: int, cms_pos: int) -> str:
     # Assuming node.value has already been validated to be non-negative
-    return '[-]' + ('+' * node.value)
+    if node.value < 128:
+        return '[-]' + ('+' * node.value)
+    else:
+        return '[-]' + ('-' * (256 - node.value))
 
 @Emitter.register(nodes.UntilStmt)
 def compile_until(self: Emitter, node: nodes.UntilStmt, debug_info: DebugInfo | None, bf_pos: int, cms_pos: int):
@@ -156,8 +159,19 @@ def compile_move(self: Emitter, node: nodes.MoveStmt, debug_info: DebugInfo | No
     dptr_max = node.delta_ptr_max
     diff = dptr_max - dptr_min
 
-    mv_code = "["
+    # Clear the destination cells first
 
+    mv_code = ""
+    # Move to minimum location
+    mv_code += get_ptr_instructions(dptr_min)
+    # Clear each destination cell
+    mv_code += ">".join("[-]" for _ in range(diff + 1))
+    # Move back to the original location
+    mv_code += get_ptr_instructions(-dptr_max)
+
+    # Now enter the moving loop
+
+    mv_code += "["
     # Move to minimum location
     mv_code += get_ptr_instructions(dptr_min)
     # Copy from the range of min loc to max loc
@@ -187,12 +201,18 @@ def compile_copy(self: Emitter, node: nodes.CopyStmt, debug_info: DebugInfo | No
     tmp = node.delta_ptr_tmp
     diff = destmax - destmin
 
-    cp_code = "["
+    # Clear the tmp and destmin:destmax cells first
+    cp_code = ""
+    cp_code += get_ptr_instructions(destmin)  # move to destmin
+    cp_code += ">".join("[-]" for _ in range(diff + 1))  # clear each cell from destmin:destmax
+    cp_code += get_ptr_instructions(tmp - destmax) + "[-]"  # move from destmax -> tmp and clear tmp
+    cp_code += get_ptr_instructions(-tmp)  # move back to src
 
     # Cast src to destmin:destmax AND tmp
     # We can't use compile_mv() because it doesn't
     # support moving to more than one range
 
+    cp_code += "["
     # Move to minimum location
     cp_code += "[" + get_ptr_instructions(destmin)
     # Copy from the range of min loc to max loc
