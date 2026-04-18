@@ -1,9 +1,6 @@
 # not using warnings.warn() due to need for custom formatting and the fact
 # that these warnings are not meant to be ignored by default
 
-import sys
-
-
 
 class CompilerException(Exception):
     """Base class for compiler exceptions.
@@ -31,6 +28,12 @@ class CompilerInternalError(Exception):
     These are for "it's the compiler's fault",
     and do not inherit from CompilerException
     as they are not meant to be caught by `except CompilerException` blocks."""
+    pass
+
+class CompilerDepthError(CompilerException):
+    """Raised when the compiler detects a control structure that is too deeply nested.
+    This is raised in case of RecursionError, but is not a subclass of RecursionError
+    as it is meant to be caught by `except CompilerException` blocks."""
     pass
 
 class CompilerSyntaxError(CompilerException):
@@ -64,7 +67,7 @@ class CompilerValueError(CompilerSemanticError):
     pass
 
 class CompilerPtrWarning(CompilerSemanticWarning):
-    """Base class for all pointer errors."""
+    """Base class for all pointer warnings."""
     pass
 
 class CompilerPtrOutOfBoundsWarning(CompilerPtrWarning):

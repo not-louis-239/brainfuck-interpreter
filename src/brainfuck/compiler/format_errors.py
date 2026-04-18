@@ -1,21 +1,20 @@
 import sys
 from typing import TYPE_CHECKING
 
-from brainfuck.compiler.exceptions import CompilerWarning
-
-
 from ..utils.format_tools import COL_RESET, COL_ERR, COL_ERR_HIGHLIGHT, COL_WARN, COL_WARN_HIGHLIGHT
 from .get_line_and_col import get_line_and_col
 from .exceptions import (
     CompilerException,
     CompilerWarning,
+    CompilerSemanticWarning,
     CompilerSyntaxError,
     CompilerSemanticError,
     CompilerTypeError,
     CompilerValueError,
     CompilerPtrWarning,
     CompilerPtrStabilityWarning,
-    CompilerPtrOutOfBoundsWarning
+    CompilerPtrOutOfBoundsWarning,
+    CompilerDepthError
 )
 
 if TYPE_CHECKING:
@@ -26,11 +25,13 @@ ERR_NAMES: dict[type[CompilerException] | type[CompilerWarning], str] = {
     CompilerWarning: "warning",
     CompilerSyntaxError: "syntax error",
     CompilerSemanticError: "semantic error",
+    CompilerSemanticWarning: "semantic warning",
     CompilerTypeError: "invalid argument type",
     CompilerValueError: "invalid argument value",
     CompilerPtrWarning: "pointer warning",
     CompilerPtrStabilityWarning: "pointer stability warning",
-    CompilerPtrOutOfBoundsWarning: "pointer out of bounds warning"
+    CompilerPtrOutOfBoundsWarning: "pointer out of bounds warning",
+    CompilerDepthError: "depth error"
 }
 
 def format_err(err: CompilerException) -> str:

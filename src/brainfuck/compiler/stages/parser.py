@@ -5,7 +5,11 @@ from typing import Callable, TypeAlias
 from ..ast import nodes
 from ..ast.nodes import ASTNode, AbstractSyntaxTree
 from ..crim_tokens import Token, CrimTokenType
-from ..exceptions import CompilerSyntaxError, CompilerTypeError, CompilerInternalError
+from ..exceptions import (
+    CompilerDepthError,
+    CompilerSyntaxError,
+    CompilerTypeError
+)
 
 
 _ParseCallable: TypeAlias = Callable[["Parser"], ASTNode]
@@ -96,6 +100,9 @@ class Parser:
         except KeyError:
             assert token.metadata is not None
             raise CompilerSyntaxError(f"Unexpected token type: {token.typ}", pos=token.metadata.pos, src_code=self.src_code)
+        except RecursionError:
+            assert token.metadata is not None
+            raise CompilerDepthError("Control structure is too deeply nested", pos=token.metadata.pos, src_code=self.src_code)
 
     def parse(self, tokens: list[Token], src_code: list[str]) -> AbstractSyntaxTree:
         """Parse a list of tokens into an AST (Abstract Syntax Tree),

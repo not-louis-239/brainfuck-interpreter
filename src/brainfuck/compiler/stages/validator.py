@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from ..format_errors import compiler_warn
 
 from ..exceptions import (
+    CompilerDepthError,
     CompilerInternalError,
     CompilerValueError,
     CompilerPtrStabilityWarning,
@@ -56,7 +57,15 @@ class Validator:
 
             # Control structures (potentially dangerous, must be checked recursively)
             case nodes.UntilStmt(body=body):
-                body_sum = self._walk_ptr_deltas(body)
+                try:
+                    body_sum = self._walk_ptr_deltas(body)
+                except RecursionError as e:
+                    raise CompilerDepthError(
+                        "Validator exceeded maximum recursion depth while checking pointer deltas. This likely means that the control structure is too deeply nested.",
+                        pos=node.metadata.pos if node.metadata is not None else 0,
+                        src_code=self.src_code
+                    ) from e
+
                 if (bad_sum := body_sum.s_net) != 0:
                     assert node.metadata is not None
                     compiler_warn(
@@ -101,7 +110,14 @@ class Validator:
         s_max = 0
 
         for node in ast:
-            child = self._walk_node_ptr_deltas(node)
+            try:
+                child = self._walk_node_ptr_deltas(node)
+            except RecursionError as e:
+                raise CompilerDepthError(
+                    "Validator exceeded maximum recursion depth while checking pointer deltas. This likely means that the control structure is too deeply nested.",
+                    pos=node.metadata.pos if node.metadata is not None else 0,
+                    src_code=self.src_code
+                ) from e
             child_min = s_cur + child.s_min
             child_max = s_cur + child.s_max
 
@@ -239,7 +255,14 @@ class Validator:
                     # If they do, they deserve the RecursionError.
                     # Who the f*ck needs 1,000 loops in Brainfuck anyway?
 
-                    self._check_types_and_vals(node.body)
+                    try:
+                        self._check_types_and_vals(node.body)
+                    except RecursionError as e:
+                        raise CompilerDepthError(
+                            "Validator exceeded maximum recursion depth while checking types and values. This likely means that the control structure is too deeply nested.",
+                            pos=node.metadata.pos if node.metadata is not None else 0,
+                            src_code=self.src_code
+                        ) from e
 
                 case nodes.SetStmt(value=value):
                     if not 0 <= value <= 255:

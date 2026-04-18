@@ -2,7 +2,7 @@ from typing import Callable, TypeVar
 
 from ..ast import nodes
 from ..ast.nodes import AbstractSyntaxTree, ASTNode
-from ..exceptions import CompilerInternalError
+from ..exceptions import CompilerDepthError, CompilerInternalError
 from ..debug_info import DebugInfo, CrimscriptDebugSymbol
 
 N = TypeVar("N", bound=ASTNode)
@@ -35,6 +35,13 @@ class Emitter:
             return bf_code
         except KeyError:
             raise CompilerInternalError(f"No emit function registered for type {type(node).__name__}", node.metadata.pos)
+        except RecursionError as e:
+            # I've done my best to prevent the user from getting slapped in the face
+            # by Python, but if they write 1,000 nested loops then that's on them.
+            raise CompilerDepthError(
+                "Maximum recursion depth exceeded during compilation. This likely means your code has too many nested loops or statements.",
+                pos=node.metadata.pos, src_code=self.src_code
+            ) from e
 
     def emit(self, ast: AbstractSyntaxTree, src_code: list[str], debug_symbols: bool = False) -> tuple[str, DebugInfo | None]:
         self.src_code = src_code  # required for error reporting
