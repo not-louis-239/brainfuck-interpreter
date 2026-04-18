@@ -1,10 +1,17 @@
 class BrainfuckException(Exception):
-    def __init__(self, message: str, *, position: int, src_code: list[str], mem: list[int] | None) -> None:
+    def __init__(
+            self, message: str, *, position: int, src_code: list[str],
+            mem: list[int] | None = None, ptr: int | None = None
+        ) -> None:
+        # mem and ptr can be None, for example, for syntax errors
+        # where the program didn't even start running.
+
         super().__init__(message)
         self.message = message
         self.position = position
         self.src_code = src_code
         self.mem = mem
+        self.ptr = ptr
 
 class BFSyntaxError(BrainfuckException):
     """Exception raised for Brainfuck syntax errors."""

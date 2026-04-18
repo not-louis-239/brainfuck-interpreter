@@ -113,7 +113,16 @@ def _get_mem_line(ptr: int, val: int) -> str:
     else:
         chr_repr = f"\\x{val:02X}"
 
-    return f"[\033[33m{ptr_str}\033[0m]   {val_b10_str}  {val_b16_str}   {chr_repr}"
+    # Address colour is yellow for in-bounds, red for out-of-bounds (assuming 30,000 cell memory)
+    # Value colour is white for in-bounds, red for addresses that are OOB
+    if 0 <= ptr < 30_000:
+        mem_col = "\033[33m"  # yellow
+        val_col = "\033[37m"  # white
+    else:
+        mem_col = "\033[31m"  # red
+        val_col = "\033[31m"  # red
+
+    return f"[{mem_col}{ptr_str}\033[0m]   {val_col}{val_b10_str}  {val_b16_str}   {chr_repr}{COL_RESET}"
 
 def print_crimscript_trace(e: BrainfuckException, debug_info: DebugInfo, args: Args) -> None:
     print("\nCrimscript trace:")
@@ -124,29 +133,29 @@ def print_crimscript_trace(e: BrainfuckException, debug_info: DebugInfo, args: A
     print(f"{COL_ERR_HIGHLIGHT}{debug_info.src_code[line-1]}{COL_RESET}")
     print(f"{COL_ERR}^{' ' * (col-1)}{COL_RESET}")
 
-def print_memory_trace(mem: list[int]) -> None:
-    print("\nMemory trace at error:")
-    print("Addr      Dec  Hex  Chr")
-    print("--------------------------")
+def print_memory_trace(e: BrainfuckException) -> None:
+    if e.ptr is not None:
+        print("\nMemory trace at error:")
+        print("Addr      Dec  Hex  Chr")
+        print("--------------------------")
 
-    # Get the max memory address whose value is != 0
-    max_ptr = max((ptr for ptr, val in enumerate(mem) if val != 0), default=0)
-    ptr = 0
-    while ptr <= max_ptr:
-        val = mem[ptr]
+        display_offset_range = 20  # how many cells to show on either side of the pointer
 
-        # Count consecutive cells with the same value
-        run_start = ptr
-        while ptr <= max_ptr and mem[ptr] == val:
-            ptr += 1
-        run_length = ptr - run_start
+        # Need to show the first out-of-bounds cell in either direction to make it clear
+        # when the error is due to OOB access
+        start_offset = max(-1, e.ptr - display_offset_range)
+        end_offset = min(30_000, e.ptr + display_offset_range)
 
-        # Print the first occurrence
-        print(_get_mem_line(run_start, val))
-
-        # Compress if there are 3+ repeats
-        if run_length >= 3:
-            print(f"(repeated {run_length - 1} more times)")
+        # Print cells from (-20..+20) around the pointer, with the pointer cell highlighted
+        for ptr in range(start_offset, end_offset + 1):
+            val = e.mem[ptr] if e.mem is not None and 0 <= ptr < len(e.mem) else 0
+            line = _get_mem_line(ptr, val)
+            if ptr == e.ptr:
+                print(f"{line}{COL_RESET} {COL_ERR_HIGHLIGHT}<-- pointer{COL_RESET}")
+            else:
+                print(line)
+    else:
+        print("\nMemory trace unavailable (pointer position unavailable).")
 
 def main() -> None:
     args = parse_args()
@@ -169,7 +178,7 @@ def main() -> None:
 
         # Memory trace
         if e.mem is not None:
-            print_memory_trace(e.mem)
+            print_memory_trace(e)
         else:
             print("\nNo memory trace available at error.")
 
