@@ -69,7 +69,7 @@ def run_brainfuck(src_code: list[str], *, memsize: int = 30_000, wrap: bool = Fa
                         ptr = 0
                     else:
                         raise BFSegmentationFault(
-                            f"access violation at far-right of memory",
+                            f"access violation: pointer moved right of cell {memsize - 1}",
                             position=ist, src_code=src_code, mem=mem
                         )
 
@@ -80,7 +80,7 @@ def run_brainfuck(src_code: list[str], *, memsize: int = 30_000, wrap: bool = Fa
                         ptr = memsize - 1
                     else:
                         raise BFSegmentationFault(
-                            f"access violation at far-left of memory",
+                            f"access violation: pointer moved left of cell 0",
                             position=ist, src_code=src_code, mem=mem
                         )
 

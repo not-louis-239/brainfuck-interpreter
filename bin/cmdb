@@ -125,7 +125,7 @@ def print_crimscript_trace(e: BrainfuckException, debug_info: DebugInfo, args: A
     print(f"{COL_ERR}^{' ' * (col-1)}{COL_RESET}")
 
 def print_memory_trace(mem: list[int]) -> None:
-    print("Memory trace at error:")
+    print("\nMemory trace at error:")
     print("Addr      Dec  Hex  Chr")
     print("--------------------------")
 
@@ -135,25 +135,18 @@ def print_memory_trace(mem: list[int]) -> None:
     while ptr <= max_ptr:
         val = mem[ptr]
 
-        if val == 0:
-            # Collapse long runs of zero memory into a single summary line.
-            run_start = ptr
-            while ptr <= max_ptr and mem[ptr] == 0:
-                ptr += 1
-            run_length = ptr - run_start
+        # Count consecutive cells with the same value
+        run_start = ptr
+        while ptr <= max_ptr and mem[ptr] == val:
+            ptr += 1
+        run_length = ptr - run_start
 
-            if run_length >= 3:
-                print("  ...")
-                continue
+        # Print the first occurrence
+        print(_get_mem_line(run_start, val))
 
-            # Print short zero runs explicitly
-            for explicit_ptr in range(run_start, ptr):
-                explicit_val = 0
-                print(_get_mem_line(explicit_ptr, explicit_val))
-            continue
-
-        print(_get_mem_line(ptr, val))
-        ptr += 1
+        # Compress if there are 3+ repeats
+        if run_length >= 3:
+            print(f"(repeated {run_length - 1} more times)")
 
 def main() -> None:
     args = parse_args()

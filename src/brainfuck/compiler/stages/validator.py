@@ -151,7 +151,7 @@ class Validator:
 
         if s.s_min < MEMORY_LIMIT_LEFT:
             compiler_warn(
-                "Potential segmentation fault detected: access violation to far-left of memory",
+                "Potential segmentation fault detected: access violation: pointer moves left of cell 0",
                 pos=violation_pos,
                 src_code=self.src_code,
                 typ=CompilerPtrOutOfBoundsWarning,
@@ -159,7 +159,7 @@ class Validator:
             )
         elif s.s_max >= MEMORY_LIMIT_RIGHT:
             compiler_warn(
-                "Potential segmentation fault detected: access violation to far-right of memory",
+                f"Potential segmentation fault detected: access violation: pointer moves right of cell {MEMORY_LIMIT_RIGHT - 1}",
                 pos=violation_pos,
                 src_code=self.src_code,
                 typ=CompilerPtrOutOfBoundsWarning,
