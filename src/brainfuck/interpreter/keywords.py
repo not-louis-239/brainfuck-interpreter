@@ -1,5 +1,6 @@
 from enum import StrEnum
 
+
 class BrainfuckKeywords(StrEnum):
     STDOUT = '.'
     STDIN = ','

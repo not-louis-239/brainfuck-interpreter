@@ -1,7 +1,8 @@
 import sys
 
-from .exceptions import BFSegmentationFault, BFSyntaxError, BFInterrupt
+from .exceptions import BFInterrupt, BFSegmentationFault, BFSyntaxError
 from .keywords import BrainfuckKeywords
+
 
 def validate_brainfuck(src_code: list[str]) -> None:
     stack: list[int] = []
@@ -80,7 +81,7 @@ def run_brainfuck(src_code: list[str], *, memsize: int = 30_000, wrap: bool = Fa
                         ptr = memsize - 1
                     else:
                         raise BFSegmentationFault(
-                            f"access violation: pointer moved left of cell 0",
+                            "access violation: pointer moved left of cell 0",
                             position=ist, src_code=src_code, mem=mem, ptr=ptr
                         )
 

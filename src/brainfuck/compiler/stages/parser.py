@@ -3,14 +3,9 @@ from __future__ import annotations
 from typing import Callable, TypeAlias
 
 from ..ast import nodes
-from ..ast.nodes import ASTNode, AbstractSyntaxTree
-from ..crim_tokens import Token, CrimTokenType
-from ..exceptions import (
-    CompilerDepthError,
-    CompilerSyntaxError,
-    CompilerTypeError
-)
-
+from ..ast.nodes import AbstractSyntaxTree, ASTNode
+from ..crim_tokens import CrimTokenType, Token
+from ..exceptions import CompilerDepthError, CompilerSyntaxError, CompilerTypeError
 
 _ParseCallable: TypeAlias = Callable[["Parser"], ASTNode]
 

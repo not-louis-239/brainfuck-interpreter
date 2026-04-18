@@ -1,8 +1,9 @@
 from typing import Callable
 
 from brainfuck.compiler.ast import nodes
-from brainfuck.compiler.stages import Emitter
 from brainfuck.compiler.crim_tokens import TokenMetadata
+from brainfuck.compiler.stages import Emitter
+
 
 @Emitter.register(nodes.CopyStmt)
 def compile_copy(self: Emitter, node: nodes.CopyStmt) -> str:

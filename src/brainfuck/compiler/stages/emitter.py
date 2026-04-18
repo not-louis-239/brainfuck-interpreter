@@ -2,8 +2,8 @@ from typing import Callable, TypeVar
 
 from ..ast import nodes
 from ..ast.nodes import AbstractSyntaxTree, ASTNode
+from ..debug_info import CrimscriptDebugSymbol, DebugInfo
 from ..exceptions import CompilerDepthError, CompilerInternalError
-from ..debug_info import DebugInfo, CrimscriptDebugSymbol
 
 N = TypeVar("N", bound=ASTNode)
 _EmitCallable = Callable[["Emitter", N, DebugInfo | None, int, int], str]
@@ -61,6 +61,9 @@ class Emitter:
         return (bf_code, debug_info)
 
 # Functions for compiling Crimscript AST nodes into BF
+
+def _get_ptr_instructions(displacement: int) -> str:
+    return ">" * displacement if displacement > 0 else "<" * -displacement
 
 @Emitter.register(nodes.ValueChange)
 def compile_value_change(self: Emitter, node: nodes.ValueChange, debug_info: DebugInfo | None, bf_pos: int, cms_pos: int) -> str:
@@ -153,8 +156,6 @@ def compile_until(self: Emitter, node: nodes.UntilStmt, debug_info: DebugInfo | 
 
 @Emitter.register(nodes.MoveStmt)
 def compile_move(self: Emitter, node: nodes.MoveStmt, debug_info: DebugInfo | None, bf_pos: int, cms_pos: int) -> str:
-    get_ptr_instructions: Callable[[int], str] = lambda displacement: ">" * displacement if displacement > 0 else "<" * -displacement
-
     dptr_min = node.delta_ptr_min
     dptr_max = node.delta_ptr_max
     diff = dptr_max - dptr_min
@@ -163,21 +164,21 @@ def compile_move(self: Emitter, node: nodes.MoveStmt, debug_info: DebugInfo | No
 
     mv_code = ""
     # Move to minimum location
-    mv_code += get_ptr_instructions(dptr_min)
+    mv_code += _get_ptr_instructions(dptr_min)
     # Clear each destination cell
     mv_code += ">".join("[-]" for _ in range(diff + 1))
     # Move back to the original location
-    mv_code += get_ptr_instructions(-dptr_max)
+    mv_code += _get_ptr_instructions(-dptr_max)
 
     # Now enter the moving loop
 
     mv_code += "["
     # Move to minimum location
-    mv_code += get_ptr_instructions(dptr_min)
+    mv_code += _get_ptr_instructions(dptr_min)
     # Copy from the range of min loc to max loc
     mv_code += ">".join("+" for _ in range(diff + 1))
     # Move back to the original location
-    mv_code += get_ptr_instructions(-dptr_max)
+    mv_code += _get_ptr_instructions(-dptr_max)
     # Decrement src location
     mv_code += "-"
 
@@ -194,8 +195,6 @@ def compile_copy(self: Emitter, node: nodes.CopyStmt, debug_info: DebugInfo | No
     # because the first mv() destroys src
     # we can reuse compile_move() for this
 
-    get_ptr_instructions: Callable[[int], str] = lambda displacement: ">" * displacement if displacement > 0 else "<" * -displacement
-
     destmin = node.delta_ptr_min
     destmax = node.delta_ptr_max
     tmp = node.delta_ptr_tmp
@@ -203,10 +202,10 @@ def compile_copy(self: Emitter, node: nodes.CopyStmt, debug_info: DebugInfo | No
 
     # Clear the tmp and destmin:destmax cells first
     cp_code = ""
-    cp_code += get_ptr_instructions(destmin)  # move to destmin
+    cp_code += _get_ptr_instructions(destmin)  # move to destmin
     cp_code += ">".join("[-]" for _ in range(diff + 1))  # clear each cell from destmin:destmax
-    cp_code += get_ptr_instructions(tmp - destmax) + "[-]"  # move from destmax -> tmp and clear tmp
-    cp_code += get_ptr_instructions(-tmp)  # move back to src
+    cp_code += _get_ptr_instructions(tmp - destmax) + "[-]"  # move from destmax -> tmp and clear tmp
+    cp_code += _get_ptr_instructions(-tmp)  # move back to src
 
     # Cast src to destmin:destmax AND tmp
     # We can't use compile_mv() because it doesn't
@@ -214,16 +213,16 @@ def compile_copy(self: Emitter, node: nodes.CopyStmt, debug_info: DebugInfo | No
 
     cp_code += "["
     # Move to minimum location
-    cp_code += "[" + get_ptr_instructions(destmin)
+    cp_code += "[" + _get_ptr_instructions(destmin)
     # Copy from the range of min loc to max loc
     cp_code += ">".join("+" for _ in range(diff + 1))
     # Now move to tmp and add one point there
-    cp_code += get_ptr_instructions(tmp - destmax) + "+"
+    cp_code += _get_ptr_instructions(tmp - destmax) + "+"
     # Move back to src and decrement it by 1
-    cp_code += get_ptr_instructions(-tmp) + "-]"
+    cp_code += _get_ptr_instructions(-tmp) + "-]"
 
     # Move to tmp
-    cp_code += get_ptr_instructions(tmp)
+    cp_code += _get_ptr_instructions(tmp)
 
     # Restore src from tmp
     cp_code += self.compile_stmt(
@@ -238,7 +237,7 @@ def compile_copy(self: Emitter, node: nodes.CopyStmt, debug_info: DebugInfo | No
     )
 
     # Move back from tmp -> src
-    cp_code += get_ptr_instructions(-tmp)
+    cp_code += _get_ptr_instructions(-tmp)
 
     cp_code += "]"
 

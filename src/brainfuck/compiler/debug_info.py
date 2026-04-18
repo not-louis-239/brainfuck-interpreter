@@ -1,6 +1,6 @@
 import bisect
 from dataclasses import dataclass, field
-from ..compiler.get_line_and_col import get_line_and_col
+
 
 @dataclass
 class CrimscriptDebugSymbol:

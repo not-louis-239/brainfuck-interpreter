@@ -1,0 +1,8 @@
+[tool.ruff]
+# Enable the isort (I) rules alongside the default (E, F) rules
+extend-select = ["I001", "I002"]
+
+[tool.ruff.lint.isort]
+# Optional: Add custom isort settings here
+combine-as-imports = true
+force-single-line = false

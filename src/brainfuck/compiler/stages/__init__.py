@@ -1,8 +1,4 @@
-from . import lexer
-from . import parser
-from . import validator
-from . import optimiser
-from . import emitter
+from . import emitter, lexer, optimiser, parser, validator
 
 Lexer = lexer.Lexer
 Parser = parser.Parser

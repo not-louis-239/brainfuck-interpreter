@@ -5,6 +5,7 @@ from typing import TypeAlias
 
 from ..crim_tokens import TokenMetadata
 
+
 @dataclass
 class ASTNode:
     """Base class for Crimscript AST (Abstract Syntax Tree) nodes."""

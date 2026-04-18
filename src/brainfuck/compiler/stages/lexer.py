@@ -1,9 +1,9 @@
 import re
 from typing import Callable, TypeAlias
 
-from ..crim_tokens import Token, TokenMetadata, CrimTokenType
+from ..crim_tokens import CrimTokenType, Token, TokenMetadata
 from ..exceptions import CompilerSyntaxError
-from ..get_line_and_col import get_line_and_col
+
 
 def unescape_string(s: str) -> str:
     """Unescape escape sequences in a string literal (including the surrounding quotes)."""

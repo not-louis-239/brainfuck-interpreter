@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-from ..compiler.debug_info import DebugInfo, CrimscriptDebugSymbol
+from ..compiler.debug_info import CrimscriptDebugSymbol, DebugInfo
 
 
 def load_debug(debug_path: Path) -> DebugInfo | None:

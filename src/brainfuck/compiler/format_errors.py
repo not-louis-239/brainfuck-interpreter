@@ -1,21 +1,27 @@
 import sys
 from typing import TYPE_CHECKING
 
-from ..utils.format_tools import COL_RESET, COL_ERR, COL_ERR_HIGHLIGHT, COL_WARN, COL_WARN_HIGHLIGHT
-from .get_line_and_col import get_line_and_col
+from ..utils.format_tools import (
+    COL_ERR,
+    COL_ERR_HIGHLIGHT,
+    COL_RESET,
+    COL_WARN,
+    COL_WARN_HIGHLIGHT,
+)
 from .exceptions import (
+    CompilerDepthError,
     CompilerException,
-    CompilerWarning,
+    CompilerPtrOutOfBoundsWarning,
+    CompilerPtrStabilityWarning,
+    CompilerPtrWarning,
+    CompilerSemanticError,
     CompilerSemanticWarning,
     CompilerSyntaxError,
-    CompilerSemanticError,
     CompilerTypeError,
     CompilerValueError,
-    CompilerPtrWarning,
-    CompilerPtrStabilityWarning,
-    CompilerPtrOutOfBoundsWarning,
-    CompilerDepthError
+    CompilerWarning,
 )
+from .get_line_and_col import get_line_and_col
 
 if TYPE_CHECKING:
     from brainfuck.compiler.stages.validator import Validator

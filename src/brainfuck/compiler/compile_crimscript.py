@@ -1,13 +1,8 @@
 from dataclasses import dataclass
 
-from .stages import (
-    Lexer,
-    Parser,
-    Validator,
-    Optimiser,
-    Emitter
-)
 from .debug_info import DebugInfo
+from .stages import Emitter, Lexer, Optimiser, Parser, Validator
+
 
 @dataclass
 class CompilerOutput:

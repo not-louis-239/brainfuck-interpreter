@@ -1,7 +1,8 @@
 """Module for generic Crimscript token types."""
 
-from enum import StrEnum
 from dataclasses import dataclass
+from enum import StrEnum
+
 
 class CrimTokenType(StrEnum):
     # With the exception of literals, these MUST match the

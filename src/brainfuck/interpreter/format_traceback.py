@@ -1,6 +1,11 @@
-from .exceptions import BrainfuckException, BFSegmentationFault, BFSyntaxError, BFInterrupt
-from ..utils.format_tools import COL_RESET, COL_ERR, COL_ERR_HIGHLIGHT
 from ..compiler.get_line_and_col import get_line_and_col
+from ..utils.format_tools import COL_ERR, COL_ERR_HIGHLIGHT, COL_RESET
+from .exceptions import (
+    BFInterrupt,
+    BFSegmentationFault,
+    BFSyntaxError,
+    BrainfuckException,
+)
 
 ERROR_NAMES: dict[type[BrainfuckException], str] = {
     BrainfuckException: "error",
@@ -14,7 +19,7 @@ def format_bf_traceback(exc: BrainfuckException) -> str:
     src_line = exc.src_code[line - 1] if line - 1 < len(exc.src_code) else ""
 
     assert not src_line.endswith("\n"), (
-        f"Line should not end with newline character. Source code buffers are stored without trailing newlines.\n"
+        "Line should not end with newline character. Source code buffers are stored without trailing newlines.\n"
         "Please use .splitlines() to ensure source code is stored as ['line 1', 'line 2', ...], not ['line 1\\n', 'line 2\\n', ...]"
     )
 

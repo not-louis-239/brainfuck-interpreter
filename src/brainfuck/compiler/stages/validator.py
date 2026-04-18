@@ -1,18 +1,17 @@
 from dataclasses import dataclass
 
-from ..format_errors import compiler_warn
-
+from ...utils.format_tools import COL_OK, COL_RESET, COL_WARN, COL_WARN_HIGHLIGHT
+from ..ast import nodes
+from ..ast.nodes import AbstractSyntaxTree, ASTNode
 from ..exceptions import (
     CompilerDepthError,
     CompilerInternalError,
-    CompilerValueError,
+    CompilerPtrOutOfBoundsWarning,
     CompilerPtrStabilityWarning,
-    CompilerPtrOutOfBoundsWarning
+    CompilerValueError,
 )
+from ..format_errors import compiler_warn
 
-from ..ast import nodes
-from ..ast.nodes import ASTNode, AbstractSyntaxTree
-from ...utils.format_tools import COL_OK, COL_WARN, COL_WARN_HIGHLIGHT, COL_RESET
 
 @dataclass
 class PtrSummary:
@@ -203,7 +202,7 @@ class Validator:
                     if delta_ptr_tmp == 0:
                         assert node.metadata is not None
                         raise CompilerValueError(
-                            f"Invalid CopyStmt: src cell cannot be used as the tmp cell",
+                            "Invalid CopyStmt: src cell cannot be used as the tmp cell",
                             pos=node.metadata.pos,
                             src_code=self.src_code
                         )
@@ -212,7 +211,7 @@ class Validator:
                     if delta_ptr_min <= 0 <= delta_ptr_max:
                         assert node.metadata is not None
                         raise CompilerValueError(
-                            f"Invalid CopyStmt: src cell cannot be inside the destination range",
+                            "Invalid CopyStmt: src cell cannot be inside the destination range",
                             pos=node.metadata.pos,
                             src_code=self.src_code
                         )
@@ -221,7 +220,7 @@ class Validator:
                     if delta_ptr_min <= delta_ptr_tmp <= delta_ptr_max:
                         assert node.metadata is not None
                         raise CompilerValueError(
-                            f"Invalid CopyStmt: tmp cell cannot be inside the destination range",
+                            "Invalid CopyStmt: tmp cell cannot be inside the destination range",
                             pos=node.metadata.pos,
                             src_code=self.src_code
                         )
@@ -231,7 +230,7 @@ class Validator:
                     if delta_ptr_min <= 0 <= delta_ptr_max:
                         assert node.metadata is not None
                         raise CompilerValueError(
-                            f"Invalid MoveStmt: src cell cannot be inside the destination range",
+                            "Invalid MoveStmt: src cell cannot be inside the destination range",
                             pos=node.metadata.pos,
                             src_code=self.src_code
                         )
@@ -279,7 +278,7 @@ class Validator:
                     if text is not None and any(char_is_invalid(c) for c in text):
                         assert node.metadata is not None
                         raise CompilerValueError(
-                            f"Invalid text for PrintStmt: cannot print characters where ord(character) > 255",
+                            "Invalid text for PrintStmt: cannot print characters where ord(character) > 255",
                             pos=node.metadata.pos,
                             src_code=self.src_code
                         )
@@ -288,7 +287,7 @@ class Validator:
                     if prompt is not None and any(char_is_invalid(c) for c in prompt):
                         assert node.metadata is not None
                         raise CompilerValueError(
-                            f"Invalid prompt for InputStmt: cannot contain characters where ord(character) > 255",
+                            "Invalid prompt for InputStmt: cannot contain characters where ord(character) > 255",
                             pos=node.metadata.pos,
                             src_code=self.src_code
                         )
