@@ -4,9 +4,16 @@ from pathlib import Path
 from ..compiler.debug_info import DebugInfo, CrimscriptDebugSymbol
 
 
-def load_debug(debug_path: Path) -> DebugInfo:
-    with open(debug_path, "r") as f:
-        raw_data = json.load(f)
+def load_debug(debug_path: Path) -> DebugInfo | None:
+    try:
+        with open(debug_path, "r") as f:
+            raw_data = json.load(f)
+    except FileNotFoundError:
+        print("Warning: cannot find debug file. debug info will be unavailable.")
+        return None
+    except json.JSONDecodeError:
+        print("Warning: debug file is malformed. debug info will be unavailable.")
+        return None
 
     src_code = raw_data.get("src_code", [])
     symbols: list[CrimscriptDebugSymbol] = []

@@ -6,6 +6,7 @@ from dataclasses import dataclass
 
 sys.path.insert(0, str(Path(__file__).parents[1] / "src"))
 
+from brainfuck.compiler.debug_info import DebugInfo
 from brainfuck.cmdb.data_manager import load_debug
 from brainfuck.compiler.get_line_and_col import get_line_and_col
 from brainfuck.interpreter.run_brainfuck import run_brainfuck
@@ -101,6 +102,59 @@ def parse_args() -> Args:
         debug_path=debug_file,
     )
 
+def _get_mem_line(ptr: int, val: int) -> str:
+    ptr_str = f"{ptr:05d}"
+    val_b10_str = f"{val:03d}"
+    val_b16_str = f"{val:02X}"
+    if val in ASCII_SPECIAL_CASES:
+        chr_repr = ASCII_SPECIAL_CASES[val]
+    elif 32 <= val < 127:
+        chr_repr = chr(val)
+    else:
+        chr_repr = f"\\x{val:02X}"
+
+    return f"[\033[33m{ptr_str}\033[0m]   {val_b10_str}  {val_b16_str}   {chr_repr}"
+
+def print_crimscript_trace(e: BrainfuckException, debug_info: DebugInfo, args: Args) -> None:
+    print("\nCrimscript trace:")
+    bf_ip = e.position
+    cms_ip = debug_info.get_crim_instruction(bf_ip)
+    line, col = get_line_and_col(debug_info.src_code, cms_ip)
+    print(f"{COL_BOLD}at {args.debug_path}:{line}:{col}{COL_RESET}")
+    print(f"{COL_ERR_HIGHLIGHT}{debug_info.src_code[line-1]}{COL_RESET}")
+    print(f"{COL_ERR}^{' ' * (col-1)}{COL_RESET}")
+
+def print_memory_trace(mem: list[int]) -> None:
+    print("Memory trace at error:")
+    print("Addr      Dec  Hex  Chr")
+    print("--------------------------")
+
+    # Get the max memory address whose value is != 0
+    max_ptr = max((ptr for ptr, val in enumerate(mem) if val != 0), default=0)
+    ptr = 0
+    while ptr <= max_ptr:
+        val = mem[ptr]
+
+        if val == 0:
+            # Collapse long runs of zero memory into a single summary line.
+            run_start = ptr
+            while ptr <= max_ptr and mem[ptr] == 0:
+                ptr += 1
+            run_length = ptr - run_start
+
+            if run_length >= 3:
+                print("  ...")
+                continue
+
+            # Print short zero runs explicitly
+            for explicit_ptr in range(run_start, ptr):
+                explicit_val = 0
+                print(_get_mem_line(explicit_ptr, explicit_val))
+            continue
+
+        print(_get_mem_line(ptr, val))
+        ptr += 1
+
 def main() -> None:
     args = parse_args()
     debug_info = load_debug(args.debug_path)
@@ -114,48 +168,15 @@ def main() -> None:
         # Print the standard traceback
         print(format_bf_traceback(e))
 
-        # Now print the Crimscript trace
-        print("\nCrimscript trace:")
-
-        bf_ip = e.position
-        cms_ip = debug_info.get_crim_instruction(bf_ip)
-        line, col = get_line_and_col(debug_info.src_code, cms_ip)
-        print(f"{COL_BOLD}at {args.debug_path}:{line}:{col}{COL_RESET}")
-        print(f"{COL_ERR_HIGHLIGHT}{debug_info.src_code[line-1]}{COL_RESET}")
-        print(f"{COL_ERR}^{' ' * (col-1)}{COL_RESET}")
+        # Now print the Crimscript trace (ONLY if debug info is available, otherwise just print the BF traceback)
+        if debug_info is not None:
+            print_crimscript_trace(e, debug_info, args)
+        else:
+            print("\nCrimscript trace unavailable (no debug info).")
 
         # Memory trace
         if e.mem is not None:
-            print("\nMemory trace at error:")
-            print("Addr    Dec  Hex  Chr")
-
-            # Get the max memory address whose value is != 0
-            max_ptr = max(ptr for ptr, val in enumerate(e.mem) if val != 0)
-            ptr = 0
-            while ptr <= max_ptr:
-                val = e.mem[ptr]
-
-                if val == 0:
-                    # Collapse long runs of zero memory into a single summary line.
-                    run_start = ptr
-                    while ptr <= max_ptr and e.mem[ptr] == 0:
-                        ptr += 1
-                    run_length = ptr - run_start
-
-                    if run_length >= 3:
-                        print("  ...")
-                        continue
-
-                    # Print short zero runs explicitly
-                    for explicit_ptr in range(run_start, ptr):
-                        explicit_val = 0
-                        chr_repr = ASCII_SPECIAL_CASES.get(explicit_val, chr(explicit_val) if 32 <= explicit_val < 127 else "?")
-                        print(f"  [{explicit_ptr}]: {explicit_val:3d} {explicit_val:02X} {chr_repr}")
-                    continue
-
-                chr_repr = ASCII_SPECIAL_CASES.get(val, chr(val) if 32 <= val < 127 else "?")
-                print(f"  [{ptr}]: {val:3d} {val:02X} {chr_repr}")
-                ptr += 1
+            print_memory_trace(e.mem)
         else:
             print("\nNo memory trace available at error.")
 
