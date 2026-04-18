@@ -1,11 +1,12 @@
 from dataclasses import dataclass
 
+from ..format_errors import compiler_warn
+
 from ..exceptions import (
     CompilerInternalError,
     CompilerValueError,
     CompilerPtrStabilityWarning,
-    CompilerPtrOutOfBoundsWarning,
-    compiler_warn
+    CompilerPtrOutOfBoundsWarning
 )
 
 from ..ast import nodes
