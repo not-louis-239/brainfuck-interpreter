@@ -10,6 +10,7 @@ class CrimscriptDebugSymbol:
 @dataclass
 class DebugInfo:
     src_code: list[str]
+    src_crim_path: str | None = None
     symbols: list[CrimscriptDebugSymbol] = field(default_factory=list)
 
     def get_crim_instruction(self, start_pos_bf: int) -> int:

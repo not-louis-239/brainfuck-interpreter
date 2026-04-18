@@ -18,12 +18,14 @@ def load_debug(debug_path: Path) -> DebugInfo | None:
     src_code = raw_data.get("src_code", [])
     symbols: list[CrimscriptDebugSymbol] = []
 
+    src_crim_path = raw_data.get("src_path", None)
+
     for sym in raw_data.get("symbols", []):
         symbols.append(CrimscriptDebugSymbol(start_pos_bf=sym[0], start_pos_cms=sym[1]))
 
-    return DebugInfo(src_code=src_code, symbols=symbols)
+    return DebugInfo(src_code=src_code, symbols=symbols, src_crim_path=str(src_crim_path))
 
-def save_debug(debug: DebugInfo, bf_path: Path) -> None:
+def save_debug(debug: DebugInfo, bf_path: Path, src_crim_path: Path) -> None:
     db_path = str(bf_path) + ".debug.json"
     tmp_path = db_path + ".tmp"
 
@@ -35,7 +37,8 @@ def save_debug(debug: DebugInfo, bf_path: Path) -> None:
     with open(tmp_path, "w") as f:
         json.dump({
             "symbols": serialised_symbols,
-            "src_code": debug.src_code
+            "src_code": debug.src_code,
+            "src_path": str(src_crim_path.absolute())
         }, f, indent=4)
 
     # Atomic overwrite of the debug path

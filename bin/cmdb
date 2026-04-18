@@ -114,10 +114,10 @@ def _get_mem_line(ptr: int, val: int) -> str:
         chr_repr = f"\\x{val:02X}"
 
     # Address colour is yellow for in-bounds, red for out-of-bounds (assuming 30,000 cell memory)
-    # Value colour is white for in-bounds, red for addresses that are OOB
+    # Value colour is colourless for in-bounds, red for addresses that are OOB
     if 0 <= ptr < 30_000:
         mem_col = "\033[33m"  # yellow
-        val_col = "\033[37m"  # white
+        val_col = ""  # none
     else:
         mem_col = "\033[31m"  # red
         val_col = "\033[31m"  # red
@@ -129,9 +129,9 @@ def print_crimscript_trace(e: BrainfuckException, debug_info: DebugInfo, args: A
     bf_ip = e.position
     cms_ip = debug_info.get_crim_instruction(bf_ip)
     line, col = get_line_and_col(debug_info.src_code, cms_ip)
-    print(f"{COL_BOLD}at {args.debug_path}:{line}:{col}{COL_RESET}")
+    print(f"  at \033[31m{debug_info.src_crim_path}:{line}:{col}{COL_RESET}:\n")
     print(f"{COL_ERR_HIGHLIGHT}{debug_info.src_code[line-1]}{COL_RESET}")
-    print(f"{COL_ERR}^{' ' * (col-1)}{COL_RESET}")
+    print(f"{COL_ERR_HIGHLIGHT}{' ' * (col-1)}^{COL_RESET}")
 
 def print_memory_trace(e: BrainfuckException) -> None:
     if e.ptr is not None:

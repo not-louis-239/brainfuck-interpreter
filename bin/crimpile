@@ -25,6 +25,7 @@ def fatal_err(message: str) -> NoReturn:
 
 def parse_args() -> Args:
     DEBUG_ARGS: tuple[str, ...] = ("--debug", "-d")
+    ALLOW_CLOBBER_ARGS: tuple[str, ...] = ("--allow-clobber", "-f")
 
     args = sys.argv[1:]
 
@@ -32,17 +33,20 @@ def parse_args() -> Args:
         fatal_err("missing args. run with -h or --help for usage information")
 
     if args[0] in ("-h", "--help"):
-        print(f"usage: {sys.argv[0]} <input_path> [output_path] [--allow-clobber] [{" ".join(DEBUG_ARGS)}]")
+        print(f"usage: {sys.argv[0]} <input_path> [output_path] [-f, --allow-clobber] [{" ".join(DEBUG_ARGS)}]")
+        print(f"  input_path            path to the input Crimscript file to compile")
+        print(f"  output_path           path to write the output Brainfuck file")
+        print(f"  -f, --allow-clobber   allow overwriting the output file if it already exists")
         sys.exit(0)
 
     danger_allow_clobber = False
     debug_symbols_enabled = False
 
     # Check for --allow-clobber flag and remove it from args if present
-    if "--allow-clobber" in args:
-        print("WARNING: --allow-clobber is enabled. This will overwrite the output file if it exists.")
+    if (a in args for a in ALLOW_CLOBBER_ARGS):
+        print("WARNING: (-f, --allow-clobber) is enabled. This will overwrite the output file if it exists.")
         danger_allow_clobber = True
-        args = [a for a in args if a != "--allow-clobber"]
+        args = [a for a in args if a not in ALLOW_CLOBBER_ARGS]
 
     # Check for --debug flag and remove it from args if present
     if any(d in args for d in DEBUG_ARGS):
@@ -92,7 +96,8 @@ def main():
         with open(args.output_path, "w") as file:
             file.write(compiler_output.bf_code)
         if compiler_output.debug is not None:
-            save_debug(debug=compiler_output.debug, bf_path=Path(args.output_path))
+            # TODO: add handling to avoid overwriting debug files if -f is not enabled
+            save_debug(debug=compiler_output.debug, bf_path=Path(args.output_path), src_crim_path=Path(args.input_path))
     except IsADirectoryError:
         fatal_err(f"'{args.input_path}' is a directory")
     except FileNotFoundError:

@@ -1,4 +1,7 @@
 def get_line_and_col(src_code: list[str], pos: int) -> tuple[int, int]:
+    """Returns line and column of a position in the source code. Lines and columns are 1-indexed.
+    and adjust for \\n being removed by splitlines()"""
+
     current_pos = 0
 
     for line_num, line_content in enumerate(src_code):
