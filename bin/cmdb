@@ -131,10 +131,31 @@ def main() -> None:
 
             # Get the max memory address whose value is != 0
             max_ptr = max(ptr for ptr, val in enumerate(e.mem) if val != 0)
-            for ptr in range(max_ptr + 1):
+            ptr = 0
+            while ptr <= max_ptr:
                 val = e.mem[ptr]
+
+                if val == 0:
+                    # Collapse long runs of zero memory into a single summary line.
+                    run_start = ptr
+                    while ptr <= max_ptr and e.mem[ptr] == 0:
+                        ptr += 1
+                    run_length = ptr - run_start
+
+                    if run_length >= 3:
+                        print("  ...")
+                        continue
+
+                    # Print short zero runs explicitly
+                    for explicit_ptr in range(run_start, ptr):
+                        explicit_val = 0
+                        chr_repr = ASCII_SPECIAL_CASES.get(explicit_val, chr(explicit_val) if 32 <= explicit_val < 127 else "?")
+                        print(f"  [{explicit_ptr}]: {explicit_val:3d} {explicit_val:02X} {chr_repr}")
+                    continue
+
                 chr_repr = ASCII_SPECIAL_CASES.get(val, chr(val) if 32 <= val < 127 else "?")
                 print(f"  [{ptr}]: {val:3d} {val:02X} {chr_repr}")
+                ptr += 1
         else:
             print("\nNo memory trace available at error.")
 
