@@ -40,6 +40,14 @@ def validate_brainfuck(src_code: list[str]) -> None:
 # Note to self: DO NOT USE THIS VARIABLE, OK?!
 _ist = 0
 
+# TODO:
+# Update: I figured how I can get rid of that nasty
+# global variable. I'm going to use a class instead
+# and move all the interpreter code into the class.
+# Then in the main program I can inspect the values
+# of an interpreter instance under the
+# `except KeyboardInterrupt` block.
+
 def run_brainfuck(src_code: list[str], *, memsize: int = 30_000, wrap: bool = False):
     ist = 0
     ptr = 0
