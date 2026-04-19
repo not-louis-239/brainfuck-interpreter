@@ -7,8 +7,7 @@ from typing import NoReturn
 
 sys.path.insert(0, str(Path(__file__).parents[1] / "src"))
 
-import brainfuck.interpreter.run_brainfuck as _runbf
-from brainfuck.interpreter.run_brainfuck import validate_brainfuck, run_brainfuck
+from brainfuck.interpreter.run_brainfuck import BrainfuckInterpreter
 from brainfuck.interpreter.exceptions import BrainfuckException, BFInterrupt
 from brainfuck.interpreter.format_traceback import format_bf_traceback
 from brainfuck.interpreter.show_ascii import show_ascii
@@ -71,32 +70,28 @@ def parse_args() -> Args:
 def main():
     args = parse_args()
 
-    # Attempt to parse the file and handle compile-time exceptions
+    # Attempt to parse the file
     try:
         with open(args.path, 'r', encoding="utf-8") as f:
             src_code = f.read().splitlines()
-        validate_brainfuck(src_code)
     except IsADirectoryError:
         fatal_err(f"'{args.path}' is a directory")
     except FileNotFoundError:
         fatal_err(f"no such file or directory: {args.path}")
-    except BrainfuckException as e:
-        print(format_bf_traceback(e), file=sys.stderr)
-        sys.exit(1)
+
+    # Spawn the interpreter
+    bfi = BrainfuckInterpreter()
 
     # Run Brainfuck and handle runtime exceptions
     try:
-        run_brainfuck(src_code, wrap=args.wrap, memsize=args.memsize)
-    except BFInterrupt as e:
-        print(format_bf_traceback(e), file=sys.stderr)
-        sys.exit(130)
-    except KeyboardInterrupt:
-        exc = BFInterrupt(message="program interrupted by user", position=_runbf._ist, src_code=src_code)
-        print(format_bf_traceback(exc), file=sys.stderr)
-        sys.exit(130)
+        bfi.run_brainfuck(src_code=src_code, wrap=args.wrap, memsize=args.memsize)
     except BrainfuckException as e:
         print(format_bf_traceback(e), file=sys.stderr)
         sys.exit(1)
+    except KeyboardInterrupt:
+        exc = BFInterrupt(message="program interrupted by user", position=bfi.ist, src_code=src_code)
+        print(format_bf_traceback(exc), file=sys.stderr)
+        sys.exit(130)
 
 if __name__ == "__main__":
     main()

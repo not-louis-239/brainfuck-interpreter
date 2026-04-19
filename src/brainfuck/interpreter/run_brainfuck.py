@@ -1,147 +1,124 @@
 import sys
 
-from .exceptions import BFInterrupt, BFSegmentationFault, BFSyntaxError
+from .exceptions import BFSegmentationFault, BFSyntaxError
 from .keywords import BrainfuckKeywords
 
+class BrainfuckInterpreter:
+    def __init__(self):
+        pass
 
-def validate_brainfuck(src_code: list[str]) -> None:
-    stack: list[int] = []
+    def validate_brainfuck(self) -> None:
+        stack: list[int] = []
 
-    src_code_str = "\n".join(src_code)
-    for i, ch in enumerate(src_code_str):
-        if ch == BrainfuckKeywords.LOOP_START:
-            stack.append(i)
+        src_code_str = "\n".join(self.src_code)
+        for i, ch in enumerate(src_code_str):
+            if ch == BrainfuckKeywords.LOOP_START:
+                stack.append(i)
 
-        elif ch == BrainfuckKeywords.LOOP_END:
-            if not stack:
-                # unmatched loop end
-                raise BFSyntaxError(
-                    f"unmatched '{BrainfuckKeywords.LOOP_END}'",
-                    position=i, src_code=src_code, mem=None, ptr=None
-                )
-            stack.pop()
+            elif ch == BrainfuckKeywords.LOOP_END:
+                if not stack:
+                    # unmatched loop end
+                    raise BFSyntaxError(
+                        f"unmatched '{BrainfuckKeywords.LOOP_END}'",
+                        position=i, src_code=self.src_code, mem=None, ptr=None
+                    )
+                stack.pop()
 
-    if stack:
-        # leftover unmatched loop start
-        i = stack[-1]
-        raise BFSyntaxError(
-            f"unmatched '{BrainfuckKeywords.LOOP_START}'",
-            position=i, src_code=src_code, mem=None, ptr=None
-        )
+        if stack:
+            # leftover unmatched loop start
+            i = stack[-1]
+            raise BFSyntaxError(
+                f"unmatched '{BrainfuckKeywords.LOOP_START}'",
+                position=i, src_code=self.src_code, mem=None, ptr=None
+            )
 
-# used to allow transmitting info from the function
-# globals are usually bad practice and someday
-# I want to find a better solution but this will have
-# to do for now
+    def execute_brainfuck(self, *, memsize: int = 30_000, wrap: bool = False):
+        self.ist = 0
+        self.ptr = 0
+        self.mem: list[int] = [0] * memsize
 
-# this is used for error reporting in KeyboardInterrupt
-# scenarios where somehow it doesn't get caught
-# by run_brainfuck's try-except for some reason??
-# Note to self: DO NOT USE THIS VARIABLE, OK?!
-_ist = 0
+        src_code_str: str = "\n".join(self.src_code)
+        prog_len = len(src_code_str)
 
-# TODO:
-# Update: I figured how I can get rid of that nasty
-# global variable. I'm going to use a class instead
-# and move all the interpreter code into the class.
-# Then in the main program I can inspect the values
-# of an interpreter instance under the
-# `except KeyboardInterrupt` block.
-
-def run_brainfuck(src_code: list[str], *, memsize: int = 30_000, wrap: bool = False):
-    ist = 0
-    ptr = 0
-    mem: list[int] = [0] * memsize
-
-    src_code_str: str = "\n".join(src_code)
-    prog_len = len(src_code_str)
-
-    try:
-
-
-        while ist < prog_len:
-            global _ist
-            _ist = ist
-
-            char = src_code_str[ist]
+        while self.ist < prog_len:
+            char = src_code_str[self.ist]
 
             if char == BrainfuckKeywords.VAL_INC:
-                mem[ptr] = (mem[ptr] + 1) % 256
+                self.mem[self.ptr] = (self.mem[self.ptr] + 1) % 256
 
             elif char == BrainfuckKeywords.VAL_DEC:
-                mem[ptr] = (mem[ptr] - 1) % 256
+                self.mem[self.ptr] = (self.mem[self.ptr] - 1) % 256
 
             elif char == BrainfuckKeywords.PTR_INC:
-                ptr += 1
-                if ptr >= memsize:
+                self.ptr += 1
+                if self.ptr >= memsize:
                     if wrap:
-                        ptr = 0
+                        self.ptr = 0
                     else:
                         raise BFSegmentationFault(
                             f"access violation: pointer moved right of cell {memsize - 1}",
-                            position=ist, src_code=src_code, mem=mem, ptr=ptr
+                            position=self.ist, src_code=self.src_code, mem=self.mem, ptr=self.ptr
                         )
 
             elif char == BrainfuckKeywords.PTR_DEC:
-                ptr -= 1
-                if ptr < 0:
+                self.ptr -= 1
+                if self.ptr < 0:
                     if wrap:
-                        ptr = memsize - 1
+                        self.ptr = memsize - 1
                     else:
                         raise BFSegmentationFault(
                             "access violation: pointer moved left of cell 0",
-                            position=ist, src_code=src_code, mem=mem, ptr=ptr
+                            position=self.ist, src_code=self.src_code, mem=self.mem, ptr=self.ptr
                         )
 
             elif char == BrainfuckKeywords.STDOUT:
-                print(chr(mem[ptr]), end='', flush=True)
+                print(chr(self.mem[self.ptr]), end='', flush=True)
 
             elif char == BrainfuckKeywords.STDIN:
                 ch = sys.stdin.read(1)
 
                 if ch:
-                    mem[ptr] = ord(ch) % 256
+                    self.mem[self.ptr] = ord(ch) % 256
                 else:
-                    mem[ptr] = 0
+                    self.mem[self.ptr] = 0
 
             elif char == BrainfuckKeywords.LOOP_START:
                 # If the cell value is zero, jump forward to matching loop ender
-                if mem[ptr] == 0:
+                if self.mem[self.ptr] == 0:
                     # jump forward to matching ]
                     depth = 1
                     while depth > 0:
-                        ist += 1
-                        if ist >= prog_len:
+                        self.ist += 1
+                        if self.ist >= prog_len:
                             raise BFSyntaxError(
                                 f"unmatched '{BrainfuckKeywords.LOOP_START}'",
-                                position=ist, src_code=src_code, mem=mem, ptr=ptr
+                                position=self.ist, src_code=self.src_code, mem=self.mem, ptr=self.ptr
                             )
-                        if src_code_str[ist] == BrainfuckKeywords.LOOP_START:
+                        if src_code_str[self.ist] == BrainfuckKeywords.LOOP_START:
                             depth += 1
-                        elif src_code_str[ist] == BrainfuckKeywords.LOOP_END:
+                        elif src_code_str[self.ist] == BrainfuckKeywords.LOOP_END:
                             depth -= 1
 
             elif char == BrainfuckKeywords.LOOP_END:
                 # If cell value is non-zero, jump back to matching loop start
-                if mem[ptr] != 0:
+                if self.mem[self.ptr] != 0:
                     depth = 1
                     while depth > 0:
-                        ist -= 1
-                        if ist < 0:
+                        self.ist -= 1
+                        if self.ist < 0:
                             raise BFSyntaxError(
                                 f"unmatched '{BrainfuckKeywords.LOOP_END}'",
-                                position=ist, src_code=src_code, mem=mem, ptr=ptr
+                                position=self.ist, src_code=self.src_code, mem=self.mem, ptr=self.ptr
                             )
-                        if src_code_str[ist] == BrainfuckKeywords.LOOP_END:
+                        if src_code_str[self.ist] == BrainfuckKeywords.LOOP_END:
                             depth += 1
-                        elif src_code_str[ist] == BrainfuckKeywords.LOOP_START:
+                        elif src_code_str[self.ist] == BrainfuckKeywords.LOOP_START:
                             depth -= 1
 
             # Move forward to next instruction
-            ist += 1
+            self.ist += 1
 
-    except KeyboardInterrupt:
-        raise BFInterrupt(
-            "program interrupted by user",
-            position=ist, src_code=src_code, mem=mem, ptr=ptr
-        )
+    def run_brainfuck(self, src_code: list[str], *, memsize: int = 30_000, wrap: bool = False) -> None:
+        self.src_code = src_code
+        self.validate_brainfuck()
+        self.execute_brainfuck(memsize=memsize, wrap=wrap)

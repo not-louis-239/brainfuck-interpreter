@@ -9,10 +9,10 @@ sys.path.insert(0, str(Path(__file__).parents[1] / "src"))
 from brainfuck.compiler.debug_info import DebugInfo
 from brainfuck.cmdb.data_manager import load_debug
 from brainfuck.compiler.get_line_and_col import get_line_and_col
-from brainfuck.interpreter.run_brainfuck import run_brainfuck
-from brainfuck.interpreter.exceptions import BrainfuckException
+from brainfuck.interpreter.run_brainfuck import BrainfuckInterpreter
+from brainfuck.interpreter.exceptions import BrainfuckException, BFInterrupt
 from brainfuck.interpreter.format_traceback import format_bf_traceback
-from brainfuck.utils.format_tools import COL_BOLD, COL_ERR, COL_ERR_HIGHLIGHT, COL_RESET
+from brainfuck.utils.format_tools import COL_ERR_HIGHLIGHT, COL_RESET
 
 ASCII_SPECIAL_CASES: dict[int, str] = {
     0: "NUL",
@@ -47,6 +47,7 @@ ASCII_SPECIAL_CASES: dict[int, str] = {
     29: "GS",
     30: "RS",
     31: "US",
+    32: "\' \'",
     127: "DEL",
 }
 
@@ -103,7 +104,7 @@ def parse_args() -> Args:
     )
 
 def _get_mem_line(ptr: int, val: int) -> str:
-    ptr_str = f"{ptr:05d}"
+    ptr_str = f"{ptr:5d}"
     val_b10_str = f"{val:03d}"
     val_b16_str = f"{val:02X}"
     if val in ASCII_SPECIAL_CASES:
@@ -165,8 +166,19 @@ def main() -> None:
         bf_code = f.read().splitlines()
 
     try:
-        run_brainfuck(src_code=bf_code)
-    except BrainfuckException as e:
+        bfi = BrainfuckInterpreter()
+        bfi.run_brainfuck(src_code=bf_code)
+    except (BrainfuckException, KeyboardInterrupt) as e:
+        if isinstance(e, KeyboardInterrupt):
+            # Repackage the exception for formatting
+            e = BFInterrupt(
+                message="interrupted by user", position=bfi.ist,
+                src_code=bfi.src_code, mem=bfi.mem, ptr=bfi.ptr
+            )
+            exitcode = 130
+        else:
+            exitcode = 1
+
         # Print the standard traceback
         print(format_bf_traceback(e))
 
@@ -182,7 +194,7 @@ def main() -> None:
         else:
             print("\nNo memory trace available at error.")
 
-        sys.exit(1)
+        sys.exit(exitcode)
 
 if __name__ == "__main__":
     main()
