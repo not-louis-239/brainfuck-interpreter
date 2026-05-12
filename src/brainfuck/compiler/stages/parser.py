@@ -251,16 +251,16 @@ def parse_move(self: Parser) -> nodes.MoveStmt:
 
     if len(args) == 1:
         start = args[0]
-        if not isinstance(start, int):
+        if not isinstance(start.val, int):
             assert start.metadata is not None
             raise CompilerTypeError(f"invalid argument: not an integer: {start}", start.metadata.pos, self.src_code)
         end = start
     elif len(args) == 2:
         start, end = args
-        if not isinstance(start, int):
+        if not isinstance(start.val, int):
             assert start.metadata is not None
             raise CompilerTypeError(f"invalid argument: not an integer: {start}", start.metadata.pos, self.src_code)
-        if not isinstance(end, int):
+        if not isinstance(end.val, int):
             assert end.metadata is not None
             raise CompilerTypeError(f"invalid argument: not an integer: {end}", end.metadata.pos, self.src_code)
     else:
@@ -268,7 +268,8 @@ def parse_move(self: Parser) -> nodes.MoveStmt:
         raise CompilerTypeError(f"mv() requires mv(dest) or mv(destmin, destmax), expected 1 or 2 args but received {len(args)}", start_token.metadata.pos, self.src_code)
 
     assert start_token.metadata is not None
-    return nodes.MoveStmt(delta_ptr_min=min(start, end), delta_ptr_max=max(start, end), metadata=start_token.metadata)
+    assert isinstance(end.val, int)
+    return nodes.MoveStmt(delta_ptr_min=min(start.val, end.val), delta_ptr_max=max(start.val, end.val), metadata=start_token.metadata)
 
 @Parser.register(CrimTokenType.COPY)
 def parse_copy(self: Parser) -> nodes.CopyStmt:
@@ -285,28 +286,28 @@ def parse_copy(self: Parser) -> nodes.CopyStmt:
     if len(args) == 2:
         dest, tmp = args
 
-        if not isinstance(dest, int):
+        if not isinstance(dest.val, int):
             assert dest.metadata is not None
             raise CompilerTypeError(f"invalid argument: not an integer: {dest}", pos=dest.metadata.pos, src_code=self.src_code)
-        if not isinstance(tmp, int):
+        if not isinstance(tmp.val, int):
             assert tmp.metadata is not None
             raise CompilerTypeError(f"invalid argument: not an integer: {tmp}", pos=tmp.metadata.pos, src_code=self.src_code)
 
-        return nodes.CopyStmt(delta_ptr_min=dest, delta_ptr_max=dest, delta_ptr_tmp=tmp, metadata=metadata)
+        return nodes.CopyStmt(delta_ptr_min=dest.val, delta_ptr_max=dest.val, delta_ptr_tmp=tmp.val, metadata=metadata)
     if len(args) == 3:
         destmin, destmax, tmp = args
 
-        if not isinstance(destmin, int):
+        if not isinstance(destmin.val, int):
             assert destmin.metadata is not None
             raise CompilerTypeError(f"invalid argument: not an integer: {destmin}", pos=destmin.metadata.pos, src_code=self.src_code)
-        if not isinstance(destmax, int):
+        if not isinstance(destmax.val, int):
             assert destmax.metadata is not None
             raise CompilerTypeError(f"invalid argument: not an integer: {destmax}", pos=destmax.metadata.pos, src_code=self.src_code)
-        if not isinstance(tmp, int):
+        if not isinstance(tmp.val, int):
             assert tmp.metadata is not None
             raise CompilerTypeError(f"invalid argument: not an integer: {tmp}", pos=tmp.metadata.pos, src_code=self.src_code)
 
-        return nodes.CopyStmt(delta_ptr_min=min(destmin, destmax), delta_ptr_max=max(destmin, destmax), delta_ptr_tmp=tmp, metadata=metadata)
+        return nodes.CopyStmt(delta_ptr_min=min(destmin.val, destmax.val), delta_ptr_max=max(destmin.val, destmax.val), delta_ptr_tmp=tmp.val, metadata=metadata)
 
     assert start_token.metadata is not None
     raise CompilerTypeError(f"cp() requires cp(dest, tmp) or cp(destmin, destmax, tmp), expected 2 or 3 args but received {len(args)}", start_token.metadata.pos, self.src_code)

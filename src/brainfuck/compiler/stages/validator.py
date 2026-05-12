@@ -160,6 +160,8 @@ class Validator:
         """Checks pointer deltas for potential segmentation faults caused
         by an out-of-bounds pointer. Throws errors if it finds a liability."""
 
+        # TODO: fix bug causing warnings to double-print
+
         # create an imaginary pointer for simulation
         s = self._walk_ptr_deltas(ast)
         violation_pos = self._find_bounds_violation_pos(ast)
